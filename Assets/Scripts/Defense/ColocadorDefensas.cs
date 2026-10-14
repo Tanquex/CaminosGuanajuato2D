@@ -20,8 +20,8 @@ namespace CaminosDeGuanajuato.Defense
     /// <summary>
     /// Mecanica principal del Avance 1 (Issue #3):
     /// Sistema de colocacion e interaccion de elementos defensivos en el atrio.
-    /// Permite colocar barricadas y defensores tanto con el cursor del raton (cuadricula)
-    /// como directamente frente al personaje Guanajicho interactuando con la tecla [E].
+    /// Soporta mouse y colocacion directa por personaje con teclado.
+    /// Incluye respaldo para creacion procedural si los prefabs no estan asignados.
     /// </summary>
     public class ColocadorDefensas : MonoBehaviour
     {
@@ -31,15 +31,15 @@ namespace CaminosDeGuanajuato.Defense
         [SerializeField] private List<OpcionDefensa> catalogoDefensas = new List<OpcionDefensa>();
         [SerializeField] private int indiceSeleccionado = 0;
 
-        [Header("Ajustes de Cuadricula (Grid)")]
+        [Header("Ajustes de Cuadricula")]
         [SerializeField] private float tamanoCelda = 1.0f;
         [SerializeField] private LayerMask capaObstaculos;
 
         [Header("Previsualizacion")]
         [SerializeField] private GameObject objetoFantasma;
         [SerializeField] private SpriteRenderer spriteFantasma;
-        [SerializeField] private Color colorValido = new Color(0.2f, 1f, 0.2f, 0.6f);
-        [SerializeField] private Color colorInvalido = new Color(1f, 0.2f, 0.2f, 0.6f);
+        [SerializeField] private Color colorValido = new Color(0.2f, 1f, 0.2f, 0.65f);
+        [SerializeField] private Color colorInvalido = new Color(1f, 0.2f, 0.2f, 0.65f);
 
         [Header("Referencia a Guanajicho")]
         [SerializeField] private GuanajichoController guanajicho;
@@ -51,7 +51,7 @@ namespace CaminosDeGuanajuato.Defense
 
         public List<OpcionDefensa> Catalogo => catalogoDefensas;
         public int IndiceSeleccionado => indiceSeleccionado;
-        public OpcionDefensa DefensaSeleccionada => (catalogoDefensas.Count > 0 && indiceSeleccionado < catalogoDefensas.Count) ? catalogoDefensas[indiceSeleccionado] : null;
+        public OpcionDefensa DefensaSeleccionada => (catalogoDefensas != null && catalogoDefensas.Count > 0 && indiceSeleccionado < catalogoDefensas.Count) ? catalogoDefensas[indiceSeleccionado] : null;
 
         public event Action<OpcionDefensa, Vector3> OnDefensaColocada;
         public event Action<int> OnDefensaSeleccionadaCambiada;
@@ -65,6 +65,8 @@ namespace CaminosDeGuanajuato.Defense
             }
             Instance = this;
             camaraPrincipal = Camera.main;
+
+            VerificarCatalogoPorDefecto();
         }
 
         private void Start()
@@ -78,6 +80,18 @@ namespace CaminosDeGuanajuato.Defense
             SeleccionarDefensa(0);
         }
 
+        private void VerificarCatalogoPorDefecto()
+        {
+            if (catalogoDefensas == null || catalogoDefensas.Count == 0)
+            {
+                catalogoDefensas = new List<OpcionDefensa>
+                {
+                    new OpcionDefensa { nombre = "Barricada Colonial", tipo = TipoDefensa.BarricadaColonial, costo = 25, descripcion = "Bloquea el paso de invasores." },
+                    new OpcionDefensa { nombre = "Hondero Insurgente", tipo = TipoDefensa.HonderoInsurgente, costo = 50, descripcion = "Lanza proyectiles a distancia." }
+                };
+            }
+        }
+
         private void Update()
         {
             ProcesarTeclasSeleccion();
@@ -87,9 +101,18 @@ namespace CaminosDeGuanajuato.Defense
 
         private void ProcesarTeclasSeleccion()
         {
-            if (Input.GetKeyDown(KeyCode.Alpha1)) SeleccionarDefensa(0);
-            if (Input.GetKeyDown(KeyCode.Alpha2)) SeleccionarDefensa(1);
-            if (Input.GetKeyDown(KeyCode.Alpha3)) SeleccionarDefensa(2);
+            if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1)) SeleccionarDefensa(0);
+            if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2)) SeleccionarDefensa(1);
+            if (Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.Keypad3)) SeleccionarDefensa(2);
+
+#if ENABLE_INPUT_SYSTEM
+            if (UnityEngine.InputSystem.Keyboard.current != null)
+            {
+                var kb = UnityEngine.InputSystem.Keyboard.current;
+                if (kb.digit1Key.wasPressedThisFrame || kb.numpad1Key.wasPressedThisFrame) SeleccionarDefensa(0);
+                if (kb.digit2Key.wasPressedThisFrame || kb.numpad2Key.wasPressedThisFrame) SeleccionarDefensa(1);
+            }
+#endif
         }
 
         public void SeleccionarDefensa(int indice)
@@ -106,19 +129,25 @@ namespace CaminosDeGuanajuato.Defense
             if (camaraPrincipal == null) camaraPrincipal = Camera.main;
             if (camaraPrincipal == null) return;
 
-            Vector3 mouseMundo = camaraPrincipal.ScreenToWorldPoint(Input.mousePosition);
+            Vector3 mousePantalla = Input.mousePosition;
+#if ENABLE_INPUT_SYSTEM
+            if (UnityEngine.InputSystem.Mouse.current != null)
+            {
+                Vector2 mPos = UnityEngine.InputSystem.Mouse.current.position.ReadValue();
+                mousePantalla = new Vector3(mPos.x, mPos.y, 0f);
+            }
+#endif
+
+            Vector3 mouseMundo = camaraPrincipal.ScreenToWorldPoint(mousePantalla);
             mouseMundo.z = 0f;
 
-            // Ajuste a la cuadricula (Grid Snapping)
             float xAjustado = Mathf.Round(mouseMundo.x / tamanoCelda) * tamanoCelda;
             float yAjustado = Mathf.Round(mouseMundo.y / tamanoCelda) * tamanoCelda;
 
             posicionObjetivoGrid = new Vector3(xAjustado, yAjustado, 0f);
 
-            // Validar si la posicion esta libre y si alcanzan los recursos
             esPosicionValida = ValidarPosicion(posicionObjetivoGrid, DefensaSeleccionada != null ? DefensaSeleccionada.costo : 0);
 
-            // Mover y colorear el fantasma
             if (objetoFantasma != null)
             {
                 objetoFantasma.transform.position = posicionObjetivoGrid;
@@ -131,17 +160,26 @@ namespace CaminosDeGuanajuato.Defense
 
         private void ProcesarEntradaColocacion()
         {
-            // Clic izquierdo: Colocar en la posicion del mouse
-            if (Input.GetMouseButtonDown(0))
+            bool clicIzquierdo = Input.GetMouseButtonDown(0);
+#if ENABLE_INPUT_SYSTEM
+            if (!clicIzquierdo && UnityEngine.InputSystem.Mouse.current != null)
             {
-                if (esPosicionValida)
-                {
-                    ColocarDefensaEn(posicionObjetivoGrid);
-                }
+                clicIzquierdo = UnityEngine.InputSystem.Mouse.current.leftButton.wasPressedThisFrame;
+            }
+#endif
+            if (clicIzquierdo && esPosicionValida)
+            {
+                ColocarDefensaEn(posicionObjetivoGrid);
             }
 
-            // Tecla E o Espacio: Guanajicho coloca una defensa en la casilla frente a el
-            if (Input.GetKeyDown(KeyCode.E))
+            bool presionoE = Input.GetKeyDown(KeyCode.E);
+#if ENABLE_INPUT_SYSTEM
+            if (!presionoE && UnityEngine.InputSystem.Keyboard.current != null)
+            {
+                presionoE = UnityEngine.InputSystem.Keyboard.current.eKey.wasPressedThisFrame;
+            }
+#endif
+            if (presionoE)
             {
                 ColocarFrenteAGuanajicho();
             }
@@ -164,15 +202,13 @@ namespace CaminosDeGuanajuato.Defense
 
         private bool ValidarPosicion(Vector3 posicion, int costo)
         {
-            // 1. Verificar si tiene recursos civicos suficientes
             if (RecursosCivicosManager.Instance != null && !RecursosCivicosManager.Instance.PuedeCostear(costo))
             {
                 return false;
             }
 
-            // 2. Verificar que no haya colision o solapamiento con otra estructura
-            Collider2D colision = Physics2D.OverlapBox(posicion, Vector2.one * (tamanoCelda * 0.8f), 0f, capaObstaculos);
-            if (colision != null)
+            Collider2D colision = Physics2D.OverlapBox(posicion, Vector2.one * (tamanoCelda * 0.7f), 0f, capaObstaculos);
+            if (colision != null && !colision.isTrigger)
             {
                 return false;
             }
@@ -183,7 +219,7 @@ namespace CaminosDeGuanajuato.Defense
         public bool ColocarDefensaEn(Vector3 posicion)
         {
             OpcionDefensa opcion = DefensaSeleccionada;
-            if (opcion == null || opcion.prefab == null) return false;
+            if (opcion == null) return false;
 
             if (RecursosCivicosManager.Instance != null)
             {
@@ -193,11 +229,52 @@ namespace CaminosDeGuanajuato.Defense
                 }
             }
 
-            GameObject nuevaDefensa = Instantiate(opcion.prefab, posicion, Quaternion.identity);
-            nuevaDefensa.name = $"{opcion.nombre} (Instancia)";
+            GameObject nuevaDefensa;
 
+            if (opcion.prefab != null)
+            {
+                nuevaDefensa = Instantiate(opcion.prefab, posicion, Quaternion.identity);
+            }
+            else
+            {
+                // Respaldo visual garantizado si el prefab no fue vinculado
+                nuevaDefensa = CrearDefensaProcedural(opcion, posicion);
+            }
+
+            nuevaDefensa.name = $"{opcion.nombre} (Instancia)";
             OnDefensaColocada?.Invoke(opcion, posicion);
+            Debug.Log($"<color=cyan>[Defensas]</color> {opcion.nombre} colocada en {posicion}. Puntos restantes: {(RecursosCivicosManager.Instance != null ? RecursosCivicosManager.Instance.RecursosActuales : 0)}");
             return true;
+        }
+
+        private GameObject CrearDefensaProcedural(OpcionDefensa opcion, Vector3 posicion)
+        {
+            GameObject go = new GameObject(opcion.nombre);
+            go.transform.position = posicion;
+
+            SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
+            sr.sortingOrder = 5;
+
+            // Intentar usar un sprite de los recursos cargados
+            if (opcion.icono != null) sr.sprite = opcion.icono;
+            else
+            {
+                // Crear sprite de color tematico
+                Texture2D tex = new Texture2D(32, 32);
+                Color colorBase = opcion.tipo == TipoDefensa.BarricadaColonial ? new Color(0.6f, 0.4f, 0.2f) : new Color(0.2f, 0.6f, 0.8f);
+                Color[] cols = new Color[32 * 32];
+                for (int i = 0; i < cols.Length; i++) cols[i] = colorBase;
+                tex.SetPixels(cols);
+                tex.Apply();
+                sr.sprite = Sprite.Create(tex, new Rect(0, 0, 32, 32), new Vector2(0.5f, 0.5f), 32);
+            }
+
+            BoxCollider2D bc = go.AddComponent<BoxCollider2D>();
+            bc.size = Vector2.one * 0.8f;
+
+            DefensaElemento def = go.AddComponent<DefensaElemento>();
+            // Se inicializa con los valores del tipo
+            return go;
         }
 
         private void CrearFantasmaSiNoExiste()
@@ -208,6 +285,13 @@ namespace CaminosDeGuanajuato.Defense
                 objetoFantasma.transform.SetParent(transform);
                 spriteFantasma = objetoFantasma.AddComponent<SpriteRenderer>();
                 spriteFantasma.sortingOrder = 100;
+
+                Texture2D tex = new Texture2D(32, 32);
+                Color[] cols = new Color[32 * 32];
+                for (int i = 0; i < cols.Length; i++) cols[i] = Color.white;
+                tex.SetPixels(cols);
+                tex.Apply();
+                spriteFantasma.sprite = Sprite.Create(tex, new Rect(0, 0, 32, 32), new Vector2(0.5f, 0.5f), 32);
             }
             ActualizarSpriteFantasma();
         }
@@ -220,18 +304,12 @@ namespace CaminosDeGuanajuato.Defense
             if (actual != null && actual.prefab != null)
             {
                 SpriteRenderer srPrefab = actual.prefab.GetComponentInChildren<SpriteRenderer>();
-                if (srPrefab != null)
+                if (srPrefab != null && srPrefab.sprite != null)
                 {
                     spriteFantasma.sprite = srPrefab.sprite;
                     spriteFantasma.transform.localScale = srPrefab.transform.localScale;
                 }
             }
-        }
-
-        private void OnDrawGizmos()
-        {
-            Gizmos.color = esPosicionValida ? Color.green : Color.red;
-            Gizmos.DrawWireCube(posicionObjetivoGrid, Vector3.one * tamanoCelda);
         }
     }
 }

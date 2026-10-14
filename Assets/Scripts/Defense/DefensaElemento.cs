@@ -79,7 +79,11 @@ namespace CaminosDeGuanajuato.Defense
 
         private void BuscarObjetivoMasCercano()
         {
+#if UNITY_6000_0_OR_NEWER
+            InvasorNocturno[] todosInvasores = FindObjectsByType<InvasorNocturno>(FindObjectsInactive.Exclude);
+#else
             InvasorNocturno[] todosInvasores = FindObjectsByType<InvasorNocturno>(FindObjectsSortMode.None);
+#endif
             float menorDistancia = float.MaxValue;
             InvasorNocturno masCercano = null;
 
