@@ -352,9 +352,14 @@ namespace CaminosDeGuanajuato.UI
 
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("🔄 REINICIAR NIVEL", estiloBotonReinicio, GUILayout.Width(240), GUILayout.Height(46)))
+            if (GUILayout.Button("🔄 REINICIAR", estiloBotonReinicio, GUILayout.Width(190), GUILayout.Height(44)))
             {
                 ReiniciarNivel();
+            }
+            GUILayout.Space(12);
+            if (GUILayout.Button("🏠 MENÚ PRINCIPAL", estiloBotonReinicio, GUILayout.Width(190), GUILayout.Height(44)))
+            {
+                IrAlMenuPrincipal();
             }
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
@@ -381,9 +386,14 @@ namespace CaminosDeGuanajuato.UI
 
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("🔄 JUGAR DE NUEVO", estiloBotonReinicio, GUILayout.Width(240), GUILayout.Height(46)))
+            if (GUILayout.Button("🔄 JUGAR DE NUEVO", estiloBotonReinicio, GUILayout.Width(190), GUILayout.Height(44)))
             {
                 ReiniciarNivel();
+            }
+            GUILayout.Space(12);
+            if (GUILayout.Button("🏠 MENÚ PRINCIPAL", estiloBotonReinicio, GUILayout.Width(190), GUILayout.Height(44)))
+            {
+                IrAlMenuPrincipal();
             }
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
@@ -395,6 +405,12 @@ namespace CaminosDeGuanajuato.UI
         {
             Time.timeScale = 1f;
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        }
+
+        public void IrAlMenuPrincipal()
+        {
+            Time.timeScale = 1f;
+            SceneManager.LoadScene("MainMenu");
         }
 
         private void DibujarBarraProgreso(float porcentaje)
