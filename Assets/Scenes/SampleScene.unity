@@ -855,7 +855,10 @@ MonoBehaviour:
   oleadaActual: 0
   totalOleadas: 5
   enemigosPorOleadaBase: 3
-  intervaloEntreEnemigos: 1.5
+  intervaloEntreEnemigos: 1.4
+  inicioAutomatico: 1
+  tiempoPreparacionInicial: 10
+  tiempoEntreOleadas: 8
   puntoSpawn: {fileID: 100072}
   waypoints:
   - {fileID: 100072}

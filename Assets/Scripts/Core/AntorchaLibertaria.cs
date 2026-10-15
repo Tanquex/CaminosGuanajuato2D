@@ -24,6 +24,7 @@ namespace CaminosDeGuanajuato.Core
         public int SaludMaxima => saludMaxima;
         public int SaludActual => saludActual;
         public float PorcentajeSalud => (float)saludActual / saludMaxima;
+        public bool EstaExtinguida => saludActual <= 0;
 
         public event Action<int, int> OnSaludCambiada;
         public event Action OnAntorchaExtinguida;

@@ -6,9 +6,9 @@ using UnityEngine;
 namespace CaminosDeGuanajuato.Core
 {
     /// <summary>
-    /// Generador de oleadas de prueba para la mision del Atrio Parroquial.
-    /// Permite invocar oleadas manualmente (con tecla [G] o boton en pantalla)
-    /// para comprobar y calibrar la colocacion de defensas y su eficacia.
+    /// Generador de oleadas para la mision del Atrio Parroquial.
+    /// Soporta inicio automatico tras tiempo de preparacion (cuenta regresiva),
+    /// avance manual con tecla [G] y deteccion de victoria/derrota.
     /// </summary>
     public class OleadasSpawner : MonoBehaviour
     {
@@ -18,8 +18,18 @@ namespace CaminosDeGuanajuato.Core
         [SerializeField] private GameObject prefabInvasor;
         [SerializeField] private int oleadaActual = 0;
         [SerializeField] private int totalOleadas = 5;
-        [SerializeField] private int enemigosPorOleadaBase = 4;
-        [SerializeField] private float intervaloEntreEnemigos = 1.5f;
+        [SerializeField] private int enemigosPorOleadaBase = 3;
+        [SerializeField] private float intervaloEntreEnemigos = 1.4f;
+
+        [Header("Automatizacion y Tiempos")]
+        [Tooltip("Indica si las oleadas inician solas tras el temporizador")]
+        [SerializeField] private bool inicioAutomatico = true;
+
+        [Tooltip("Tiempo de preparacion antes de la primera oleada (segundos)")]
+        [SerializeField] private float tiempoPreparacionInicial = 10.0f;
+
+        [Tooltip("Tiempo de descanso entre oleadas completadas (segundos)")]
+        [SerializeField] private float tiempoEntreOleadas = 8.0f;
 
         [Header("Ruta de los Invasores")]
         [SerializeField] private Transform puntoSpawn;
@@ -29,14 +39,20 @@ namespace CaminosDeGuanajuato.Core
         [Header("Estado")]
         [SerializeField] private bool oleadaEnProgreso;
         [SerializeField] private int enemigosVivos;
+        [SerializeField] private float temporizadorCuentaRegresiva;
+        [SerializeField] private bool todasOleadasCompletadas;
 
         public int OleadaActual => oleadaActual;
         public int TotalOleadas => totalOleadas;
         public bool OleadaEnProgreso => oleadaEnProgreso;
         public int EnemigosVivos => enemigosVivos;
+        public float TiempoRestanteCuentaRegresiva => Mathf.Max(0f, temporizadorCuentaRegresiva);
+        public bool EstaEnCuentaRegresiva => !oleadaEnProgreso && !todasOleadasCompletadas && inicioAutomatico && (oleadaActual < totalOleadas);
+        public bool TodasOleadasCompletadas => todasOleadasCompletadas;
 
         public event Action<int> OnOleadaIniciada;
         public event Action<int> OnOleadaCompletada;
+        public event Action OnTodasOleadasSuperadas;
 
         private void Awake()
         {
@@ -46,6 +62,7 @@ namespace CaminosDeGuanajuato.Core
                 return;
             }
             Instance = this;
+            temporizadorCuentaRegresiva = tiempoPreparacionInicial;
         }
 
         private void Start()
@@ -64,10 +81,26 @@ namespace CaminosDeGuanajuato.Core
 
         private void Update()
         {
-            // Atajo de teclado 'G' para iniciar o adelantar una oleada de prueba rapidamente
+            // No avanzar si la antorcha fue destruida
+            if (AntorchaLibertaria.Instance != null && AntorchaLibertaria.Instance.EstaExtinguida)
+            {
+                return;
+            }
+
+            // Atajo de teclado 'G' para iniciar o adelantar la oleada sin esperar el temporizador
             if (Input.GetKeyDown(KeyCode.G))
             {
-                if (!oleadaEnProgreso)
+                if (!oleadaEnProgreso && !todasOleadasCompletadas)
+                {
+                    IniciarSiguienteOleada();
+                }
+            }
+
+            // Logica de cuenta regresiva automatica
+            if (inicioAutomatico && !oleadaEnProgreso && !todasOleadasCompletadas && oleadaActual < totalOleadas)
+            {
+                temporizadorCuentaRegresiva -= Time.deltaTime;
+                if (temporizadorCuentaRegresiva <= 0f)
                 {
                     IniciarSiguienteOleada();
                 }
@@ -76,7 +109,7 @@ namespace CaminosDeGuanajuato.Core
 
         public void IniciarSiguienteOleada()
         {
-            if (oleadaEnProgreso) return;
+            if (oleadaEnProgreso || todasOleadasCompletadas) return;
 
             oleadaActual++;
             oleadaEnProgreso = true;
@@ -84,6 +117,7 @@ namespace CaminosDeGuanajuato.Core
 
             int cantidadEnemigos = enemigosPorOleadaBase + (oleadaActual - 1) * 2;
             StartCoroutine(RutinaSpawnOleada(cantidadEnemigos));
+            Debug.Log($"<color=orange>[Oleadas]</color> ¡Iniciando Oleada {oleadaActual} de {totalOleadas}! ({cantidadEnemigos} invasores)");
         }
 
         private IEnumerator RutinaSpawnOleada(int cantidad)
@@ -92,6 +126,12 @@ namespace CaminosDeGuanajuato.Core
 
             for (int i = 0; i < cantidad; i++)
             {
+                // Si la antorcha cayo mientras spawnean, detener el spawn
+                if (AntorchaLibertaria.Instance != null && AntorchaLibertaria.Instance.EstaExtinguida)
+                {
+                    yield break;
+                }
+
                 if (prefabInvasor != null && puntoSpawn != null)
                 {
                     GameObject go = Instantiate(prefabInvasor, puntoSpawn.position, Quaternion.identity);
@@ -115,7 +155,19 @@ namespace CaminosDeGuanajuato.Core
             {
                 oleadaEnProgreso = false;
                 OnOleadaCompletada?.Invoke(oleadaActual);
-                Debug.Log($"[OleadasSpawner] ¡Oleada {oleadaActual} superada con exito!");
+
+                if (oleadaActual >= totalOleadas)
+                {
+                    todasOleadasCompletadas = true;
+                    OnTodasOleadasSuperadas?.Invoke();
+                    Debug.Log("<color=green>[Oleadas]</color> ⭐ ¡TODAS LAS OLEADAS COMPLETADAS! ¡VICTORIA!");
+                }
+                else
+                {
+                    // Reiniciar cuenta regresiva para la siguiente oleada
+                    temporizadorCuentaRegresiva = tiempoEntreOleadas;
+                    Debug.Log($"<color=yellow>[Oleadas]</color> Oleada {oleadaActual} superada. Siguiente oleada en {tiempoEntreOleadas}s.");
+                }
             }
         }
     }
