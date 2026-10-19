@@ -29,6 +29,9 @@ namespace CaminosDeGuanajuato.Core
         public event Action<int, int> OnSaludCambiada;
         public event Action OnAntorchaExtinguida;
 
+        private Vector3 escalaBaseFuego = Vector3.one;
+        private bool estaParpadeandoDanio = false;
+
         private void Awake()
         {
             if (Instance != null && Instance != this)
@@ -38,11 +41,31 @@ namespace CaminosDeGuanajuato.Core
             }
             Instance = this;
             saludActual = saludMaxima;
+            if (spriteFuego == null) spriteFuego = GetComponent<SpriteRenderer>();
+            if (spriteFuego != null) escalaBaseFuego = spriteFuego.transform.localScale;
         }
 
         private void Start()
         {
             OnSaludCambiada?.Invoke(saludActual, saludMaxima);
+        }
+
+        private void Update()
+        {
+            if (EstaExtinguida || spriteFuego == null) return;
+
+            // Crepitar y oscilar sutilmente la llama libertaria
+            float ruido = Mathf.PerlinNoise(Time.time * 7f, 0.5f);
+            float factorEscala = 1f + (ruido - 0.5f) * 0.12f;
+            spriteFuego.transform.localScale = escalaBaseFuego * factorEscala;
+
+            if (!estaParpadeandoDanio)
+            {
+                // Variación sutil entre dorado cálido y ámbar de fuego insurgente
+                float tinte = Mathf.Sin(Time.time * 5f) * 0.5f + 0.5f;
+                Color fuegoVivo = Color.Lerp(new Color(1f, 0.92f, 0.5f, 1f), new Color(1f, 0.68f, 0.22f, 1f), tinte);
+                spriteFuego.color = fuegoVivo;
+            }
         }
 
         /// <summary>
@@ -77,9 +100,10 @@ namespace CaminosDeGuanajuato.Core
 
         private System.Collections.IEnumerator ParpadeoDanio()
         {
+            estaParpadeandoDanio = true;
             spriteFuego.color = colorDanio;
             yield return new WaitForSeconds(0.12f);
-            spriteFuego.color = colorNormal;
+            estaParpadeandoDanio = false;
         }
     }
 }

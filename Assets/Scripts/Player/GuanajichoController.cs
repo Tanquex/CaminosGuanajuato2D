@@ -38,6 +38,12 @@ namespace CaminosDeGuanajuato.Player
         [SerializeField] private Animator animator;
         [SerializeField] private SpriteRenderer spriteRenderer;
 
+        [Header("Limites del Mapa (Plaza y Atrio)")]
+        [Tooltip("Impide que Guanajicho se salga del fondo de la plaza colonial")]
+        [SerializeField] private bool limitarMovimiento = true;
+        [SerializeField] private Vector2 limiteMin = new Vector2(-10.2f, -5.2f);
+        [SerializeField] private Vector2 limiteMax = new Vector2(10.2f, 4.2f);
+
         [Header("Interaccion")]
         [SerializeField] private float radioInteraccion = 1.6f;
         [SerializeField] private LayerMask capaInteractuable = ~0;
@@ -179,6 +185,15 @@ namespace CaminosDeGuanajuato.Player
             {
                 transform.position += (Vector3)velocidadDeseada * Time.fixedDeltaTime;
             }
+
+            // Evitar que Guanajicho se salga del fondo de la plaza colonial
+            if (limitarMovimiento)
+            {
+                Vector3 pos = transform.position;
+                pos.x = Mathf.Clamp(pos.x, limiteMin.x, limiteMax.x);
+                pos.y = Mathf.Clamp(pos.y, limiteMin.y, limiteMax.y);
+                transform.position = pos;
+            }
         }
 
         private void ActualizarAnimaciones()
@@ -309,6 +324,11 @@ namespace CaminosDeGuanajuato.Player
             {
                 proyectil.ConfigurarDireccion(direccionDisparo, danioPiedra);
                 proyectil.SetVelocidad(velocidadProyectil);
+            }
+
+            if (AudioColonialManager.Instance != null)
+            {
+                AudioColonialManager.Instance.ReproducirDisparoHonda();
             }
         }
 

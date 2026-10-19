@@ -185,6 +185,13 @@ namespace CaminosDeGuanajuato.Core
 
             oleadaActual++;
             oleadaEnProgreso = true;
+
+            if (AudioColonialManager.Instance != null)
+            {
+                AudioColonialManager.Instance.ReproducirCampanaGritoLibertad();
+                AudioColonialManager.Instance.ReproducirAlertaInvasion();
+            }
+
             OnOleadaIniciada?.Invoke(oleadaActual);
 
             int cantidadEnemigos = enemigosPorOleadaBase + (oleadaActual - 1) * 2;

@@ -66,6 +66,11 @@ namespace CaminosDeGuanajuato.Defense
             InvasorNocturno invasor = collision.GetComponent<InvasorNocturno>();
             if (invasor != null)
             {
+                if (AudioColonialManager.Instance != null)
+                {
+                    AudioColonialManager.Instance.ReproducirImpacto();
+                }
+
                 invasor.RecibirDanio(danio);
                 Destroy(gameObject);
             }

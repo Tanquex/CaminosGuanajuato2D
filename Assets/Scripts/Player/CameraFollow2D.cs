@@ -17,15 +17,15 @@ namespace CaminosDeGuanajuato.Player
         [SerializeField] private Vector3 desplazamiento = new Vector3(0f, 0f, -10f);
 
         [Header("Limites (Opcional)")]
-        [SerializeField] private bool usarLimites = false;
-        [SerializeField] private Vector2 limiteMin = new Vector2(-20f, -20f);
-        [SerializeField] private Vector2 limiteMax = new Vector2(20f, 20f);
+        [SerializeField] private bool usarLimites = true;
+        [SerializeField] private Vector2 limiteMin = new Vector2(-6.2f, -2.5f);
+        [SerializeField] private Vector2 limiteMax = new Vector2(6.2f, 2.0f);
 
         [Header("Zoom de Cámara (Rueda del Ratón)")]
         [Tooltip("Tamaño ortográfico inicial (más bajo = personajes más grandes y cercanos)")]
-        [SerializeField] private float tamanoOrtograficoBase = 3.2f;
-        [SerializeField] private float zoomMinimo = 2.2f;
-        [SerializeField] private float zoomMaximo = 4.8f;
+        [SerializeField] private float tamanoOrtograficoBase = 4.2f;
+        [SerializeField] private float zoomMinimo = 3.0f;
+        [SerializeField] private float zoomMaximo = 5.2f;
         [SerializeField] private float sensibilidadZoom = 0.5f;
         [SerializeField] private float suavizadoZoom = 8.0f;
 

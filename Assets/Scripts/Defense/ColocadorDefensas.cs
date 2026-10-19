@@ -309,6 +309,12 @@ namespace CaminosDeGuanajuato.Defense
             }
 
             nuevaDefensa.name = $"{opcion.nombre} (Instancia)";
+
+            if (AudioColonialManager.Instance != null)
+            {
+                AudioColonialManager.Instance.ReproducirColocarDefensa();
+            }
+
             OnDefensaColocada?.Invoke(opcion, posicion);
             Debug.Log($"<color=cyan>[Defensas]</color> {opcion.nombre} colocada en {posicion}. Puntos restantes: {(RecursosCivicosManager.Instance != null ? RecursosCivicosManager.Instance.RecursosActuales : 0)}");
             return true;

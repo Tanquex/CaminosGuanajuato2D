@@ -101,6 +101,11 @@ namespace CaminosDeGuanajuato.Core
                 RecursosCivicosManager.Instance.AgregarRecursos(valorRecursos);
             }
 
+            if (AudioColonialManager.Instance != null)
+            {
+                AudioColonialManager.Instance.ReproducirMonedaRecogida();
+            }
+
             Debug.Log($"<color=yellow>[Botín Cívico]</color> ¡Guanajicho recogió suministros (+{valorRecursos} puntos cívicos)!");
 
             // Pequeño efecto de escala al recoger
