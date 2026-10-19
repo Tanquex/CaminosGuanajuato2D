@@ -28,6 +28,7 @@ namespace CaminosDeGuanajuato.Core
 
         // Ruta de movimiento
         private List<Transform> waypoints;
+        private List<Vector3> waypointsPosiciones;
         private int indiceWaypointActual;
         private Transform objetivoFinal;
         private DefensaElemento defensaBloqueante;
@@ -48,6 +49,15 @@ namespace CaminosDeGuanajuato.Core
         public void ConfigurarRuta(List<Transform> ruta, Transform antorchaObjetivo)
         {
             waypoints = ruta;
+            waypointsPosiciones = null;
+            objetivoFinal = antorchaObjetivo;
+            indiceWaypointActual = 0;
+        }
+
+        public void ConfigurarRutaPosiciones(List<Vector3> rutaPosiciones, Transform antorchaObjetivo)
+        {
+            waypointsPosiciones = rutaPosiciones;
+            waypoints = null;
             objetivoFinal = antorchaObjetivo;
             indiceWaypointActual = 0;
         }
@@ -68,29 +78,49 @@ namespace CaminosDeGuanajuato.Core
 
         private void MoverHaciaObjetivo()
         {
-            Transform destinoActual = null;
+            Vector3 destinoActual = transform.position;
+            bool tieneDestino = false;
 
-            if (waypoints != null && indiceWaypointActual < waypoints.Count)
+            if (waypointsPosiciones != null && indiceWaypointActual < waypointsPosiciones.Count)
             {
-                destinoActual = waypoints[indiceWaypointActual];
+                destinoActual = waypointsPosiciones[indiceWaypointActual];
+                tieneDestino = true;
+            }
+            else if (waypoints != null && indiceWaypointActual < waypoints.Count)
+            {
+                if (waypoints[indiceWaypointActual] != null)
+                {
+                    destinoActual = waypoints[indiceWaypointActual].position;
+                    tieneDestino = true;
+                }
+                else
+                {
+                    indiceWaypointActual++;
+                    return;
+                }
             }
             else if (objetivoFinal != null)
             {
-                destinoActual = objetivoFinal;
+                destinoActual = objetivoFinal.position;
+                tieneDestino = true;
             }
 
-            if (destinoActual == null) return;
+            if (!tieneDestino) return;
 
-            Vector3 direccion = (destinoActual.position - transform.position);
+            Vector3 direccion = (destinoActual - transform.position);
             float distancia = direccion.magnitude;
 
-            if (distancia < 0.25f)
+            if (distancia < 0.35f)
             {
-                if (waypoints != null && indiceWaypointActual < waypoints.Count)
+                if (waypointsPosiciones != null && indiceWaypointActual < waypointsPosiciones.Count)
                 {
                     indiceWaypointActual++;
                 }
-                else if (objetivoFinal != null && distancia < 0.5f)
+                else if (waypoints != null && indiceWaypointActual < waypoints.Count)
+                {
+                    indiceWaypointActual++;
+                }
+                else if (objetivoFinal != null && distancia < 0.6f)
                 {
                     // Llego a la antorcha libertaria! Danar la antorcha
                     AntorchaLibertaria antorcha = objetivoFinal.GetComponent<AntorchaLibertaria>();
@@ -98,7 +128,7 @@ namespace CaminosDeGuanajuato.Core
                     {
                         antorcha.RecibirDanio(danioAtaque);
                     }
-                    Derrotar(false); // Desaparece al impactar
+                    Derrotar(false);
                     return;
                 }
             }
@@ -150,9 +180,21 @@ namespace CaminosDeGuanajuato.Core
             if (estaDerrotado) return;
             estaDerrotado = true;
 
-            if (recompensa && RecursosCivicosManager.Instance != null)
+            if (recompensa)
             {
-                RecursosCivicosManager.Instance.AgregarRecursos(recompensaRecursos);
+                if (RecursosCivicosManager.Instance != null)
+                {
+                    RecursosCivicosManager.Instance.AgregarRecursos(recompensaRecursos);
+                }
+
+                // 65% de probabilidad de soltar un botín cívico recolectable en el atrio
+                if (UnityEngine.Random.value < 0.65f)
+                {
+                    GameObject dropGO = new GameObject("Drop_RecursoCivico");
+                    dropGO.transform.position = transform.position;
+                    RecursoCivicoPickup pickup = dropGO.AddComponent<RecursoCivicoPickup>();
+                    pickup.Configurar(recompensaRecursos);
+                }
             }
 
             OnInvasorDerrotado?.Invoke(this);

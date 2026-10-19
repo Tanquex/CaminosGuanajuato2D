@@ -92,25 +92,92 @@ namespace CaminosDeGuanajuato.Defense
             }
         }
 
+        [Header("Modo Construcción")]
+        [SerializeField] private bool modoConstruccionActivo = false;
+
+        public bool ModoConstruccionActivo => modoConstruccionActivo;
+
+        public void ActivarModoConstruccion(bool activar)
+        {
+            modoConstruccionActivo = activar;
+            if (objetoFantasma != null) objetoFantasma.SetActive(modoConstruccionActivo);
+        }
+
         private void Update()
         {
             ProcesarTeclasSeleccion();
-            ActualizarPosicionMouse();
-            ProcesarEntradaColocacion();
+
+            if (modoConstruccionActivo)
+            {
+                if (objetoFantasma != null && !objetoFantasma.activeSelf) objetoFantasma.SetActive(true);
+                ActualizarPosicionMouse();
+                ProcesarEntradaColocacion();
+            }
+            else
+            {
+                if (objetoFantasma != null && objetoFantasma.activeSelf) objetoFantasma.SetActive(false);
+            }
         }
 
         private void ProcesarTeclasSeleccion()
         {
-            if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1)) SeleccionarDefensa(0);
-            if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2)) SeleccionarDefensa(1);
-            if (Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.Keypad3)) SeleccionarDefensa(2);
+            // Tecla B para alternar modo construccion
+            if (Input.GetKeyDown(KeyCode.B))
+            {
+                modoConstruccionActivo = !modoConstruccionActivo;
+                if (modoConstruccionActivo) ActualizarSpriteFantasma();
+            }
+
+            // Seleccionar defensa activa directamente el modo construccion
+            if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1))
+            {
+                SeleccionarDefensa(0);
+                modoConstruccionActivo = true;
+            }
+            if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2))
+            {
+                SeleccionarDefensa(1);
+                modoConstruccionActivo = true;
+            }
+            if (Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.Keypad3))
+            {
+                SeleccionarDefensa(2);
+                modoConstruccionActivo = true;
+            }
+
+            // Tecla Q o Clic Derecho para cancelar construccion
+            if (Input.GetKeyDown(KeyCode.Q) || Input.GetMouseButtonDown(1))
+            {
+                modoConstruccionActivo = false;
+            }
 
 #if ENABLE_INPUT_SYSTEM
             if (UnityEngine.InputSystem.Keyboard.current != null)
             {
                 var kb = UnityEngine.InputSystem.Keyboard.current;
-                if (kb.digit1Key.wasPressedThisFrame || kb.numpad1Key.wasPressedThisFrame) SeleccionarDefensa(0);
-                if (kb.digit2Key.wasPressedThisFrame || kb.numpad2Key.wasPressedThisFrame) SeleccionarDefensa(1);
+                if (kb.bKey.wasPressedThisFrame)
+                {
+                    modoConstruccionActivo = !modoConstruccionActivo;
+                }
+                if (kb.digit1Key.wasPressedThisFrame || kb.numpad1Key.wasPressedThisFrame)
+                {
+                    SeleccionarDefensa(0);
+                    modoConstruccionActivo = true;
+                }
+                if (kb.digit2Key.wasPressedThisFrame || kb.numpad2Key.wasPressedThisFrame)
+                {
+                    SeleccionarDefensa(1);
+                    modoConstruccionActivo = true;
+                }
+                if (kb.qKey.wasPressedThisFrame)
+                {
+                    modoConstruccionActivo = false;
+                }
+            }
+
+            if (UnityEngine.InputSystem.Mouse.current != null && UnityEngine.InputSystem.Mouse.current.rightButton.wasPressedThisFrame)
+            {
+                modoConstruccionActivo = false;
             }
 #endif
         }

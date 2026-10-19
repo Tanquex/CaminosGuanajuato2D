@@ -33,6 +33,19 @@ namespace CaminosDeGuanajuato.Defense
             Destroy(gameObject, tiempoVida);
         }
 
+        public void ConfigurarDireccion(Vector3 dir, int nuevoDanio)
+        {
+            objetivo = null;
+            danio = nuevoDanio;
+            direccion = dir.magnitude > 0.001f ? dir.normalized : Vector3.right;
+            Destroy(gameObject, tiempoVida);
+        }
+
+        public void SetVelocidad(float nuevaVelocidad)
+        {
+            velocidad = nuevaVelocidad;
+        }
+
         private void Update()
         {
             // Si el objetivo aun existe, perseguirlo; si no, continuar en la direccion previa

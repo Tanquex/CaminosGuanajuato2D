@@ -23,9 +23,28 @@ namespace CaminosDeGuanajuato.UI
         [Header("Guia de Controles")]
         [SerializeField] private bool mostrarGuiaControles = true;
 
-        // Estado del Banner
+        // Estado del Banner y Alertas
         private float tiempoTranscurridoBanner;
         private bool bannerCerradoManualmente;
+        private string alertaInvasionTexto = "";
+        private float alertaInvasionTiempo = 0f;
+        private GuanajichoController player;
+
+        private void OnEnable()
+        {
+            OleadasSpawner.OnAvisoInvasion += ManejarAvisoInvasion;
+        }
+
+        private void OnDisable()
+        {
+            OleadasSpawner.OnAvisoInvasion -= ManejarAvisoInvasion;
+        }
+
+        private void ManejarAvisoInvasion(string mensaje)
+        {
+            alertaInvasionTexto = mensaje;
+            alertaInvasionTiempo = 5.0f;
+        }
 
         // Estilos GUI
         private GUIStyle estiloCajaOscura;
@@ -60,6 +79,16 @@ namespace CaminosDeGuanajuato.UI
 
         private void Update()
         {
+            if (alertaInvasionTiempo > 0f)
+            {
+                alertaInvasionTiempo -= Time.deltaTime;
+            }
+
+            if (Input.GetKeyDown(KeyCode.H))
+            {
+                mostrarGuiaControles = !mostrarGuiaControles;
+            }
+
             if (tiempoTranscurridoBanner < duracionBannerInicio && !bannerCerradoManualmente)
             {
                 tiempoTranscurridoBanner += Time.unscaledDeltaTime;
@@ -194,13 +223,19 @@ namespace CaminosDeGuanajuato.UI
                 DibujarBannerInicio();
             }
 
-            // 3. Panel Superior Izquierdo: Estado General, Recursos y Temporizador
+            // 3. Alerta de invasión multidireccional
+            DibujarAlertaInvasion();
+
+            // 4. Panel Superior Izquierdo: Estado General, Recursos y Temporizador
             DibujarPanelEstado();
 
-            // 4. Panel Inferior Central: Selector de Defensas
+            // 5. Prompt para avivar la antorcha
+            DibujarPromptAntorcha();
+
+            // 6. Panel Inferior Central: Selector de Defensas y Modo
             DibujarSelectorDefensas();
 
-            // 5. Panel Superior Derecho: Guia de Controles
+            // 7. Panel Superior Derecho: Guia de Controles
             if (mostrarGuiaControles)
             {
                 DibujarGuiaControles();
@@ -285,30 +320,85 @@ namespace CaminosDeGuanajuato.UI
             GUILayout.EndArea();
         }
 
+        private void DibujarAlertaInvasion()
+        {
+            if (alertaInvasionTiempo <= 0f || string.IsNullOrEmpty(alertaInvasionTexto)) return;
+
+            float ancho = Mathf.Min(720, Screen.width - 40);
+            float alto = 48;
+            float x = (Screen.width - ancho) * 0.5f;
+            float y = 18;
+
+            GUI.color = Color.Lerp(Color.yellow, new Color(1f, 0.35f, 0.2f), Mathf.PingPong(Time.time * 4f, 1f));
+            GUILayout.BeginArea(new Rect(x, y, ancho, alto), estiloCajaOscura);
+            GUILayout.Space(12);
+            GUILayout.Label(alertaInvasionTexto, estiloTituloHUD);
+            GUILayout.EndArea();
+            GUI.color = Color.white;
+        }
+
+        private void DibujarPromptAntorcha()
+        {
+            if (AntorchaLibertaria.Instance == null) return;
+            if (player == null) player = FindAnyObjectByType<GuanajichoController>();
+            if (player == null) return;
+
+            float dist = Vector2.Distance(player.transform.position, AntorchaLibertaria.Instance.transform.position);
+            if (dist < 2.6f)
+            {
+                float ancho = 430;
+                float alto = 42;
+                float x = (Screen.width - ancho) * 0.5f;
+                float y = Screen.height - 145;
+
+                GUILayout.BeginArea(new Rect(x, y, ancho, alto), estiloCajaOscura);
+                GUILayout.Space(9);
+                if (AntorchaLibertaria.Instance.SaludActual < AntorchaLibertaria.Instance.SaludMaxima)
+                {
+                    GUILayout.Label("🔥 Pulsa [E] para Avivar la Antorcha (+25 HP / 10 Pts Cívicos)", estiloRecursos);
+                }
+                else
+                {
+                    GUILayout.Label("🔥 ¡La Antorcha Libertaria arde en su máximo esplendor! (100% HP)", estiloControles);
+                }
+                GUILayout.EndArea();
+            }
+        }
+
         private void DibujarSelectorDefensas()
         {
             if (ColocadorDefensas.Instance == null) return;
 
             var catalogo = ColocadorDefensas.Instance.Catalogo;
             int actualSel = ColocadorDefensas.Instance.IndiceSeleccionado;
+            bool modoConstruccion = ColocadorDefensas.Instance.ModoConstruccionActivo;
 
-            float anchoPanel = Mathf.Max(380, catalogo.Count * 180 + 30);
+            float anchoPanel = Mathf.Max(460, catalogo.Count * 185 + 30);
             float xPanel = (Screen.width - anchoPanel) * 0.5f;
-            float yPanel = Screen.height - 75;
+            float yPanel = Screen.height - 95;
 
-            GUILayout.BeginArea(new Rect(xPanel, yPanel, anchoPanel, 65), estiloCajaOscura);
+            GUILayout.BeginArea(new Rect(xPanel, yPanel, anchoPanel, 88), estiloCajaOscura);
+
+            // Indicador de Modo
+            string textoModo = modoConstruccion
+                ? "<color=#55ff55>🔨 MODO CONSTRUCCIÓN</color> (Clic: Colocar | Q / Clic Der: Cancelar y Disparar)"
+                : "<color=#ffcc33>🏹 MODO COMBATE</color> (Clic / Espacio: Dispara Honda | Pulsa 1 o 2 para Construir)";
+            GUILayout.Label(textoModo, estiloControles);
+            GUILayout.Space(2);
+
             GUILayout.BeginHorizontal();
 
             for (int i = 0; i < catalogo.Count; i++)
             {
                 var def = catalogo[i];
-                bool estaActivo = (i == actualSel);
+                bool estaActivo = (i == actualSel) && modoConstruccion;
                 string etiqueta = $"[{i + 1}] {def.nombre}\n({def.costo} pts)";
 
                 GUIStyle estilo = estaActivo ? estiloBotonActivo : estiloBoton;
-                if (GUILayout.Button(etiqueta, estilo, GUILayout.Width(170), GUILayout.Height(50)))
+                if (GUILayout.Button(etiqueta, estilo, GUILayout.Width(175), GUILayout.Height(46)))
                 {
                     ColocadorDefensas.Instance.SeleccionarDefensa(i);
+                    ColocadorDefensas.Instance.ActivarModoConstruccion(true);
                 }
             }
 
@@ -318,17 +408,21 @@ namespace CaminosDeGuanajuato.UI
 
         private void DibujarGuiaControles()
         {
-            float anchoGuia = 280;
-            GUILayout.BeginArea(new Rect(Screen.width - anchoGuia - 15, 15, anchoGuia, 165), estiloCajaOscura);
+            float anchoGuia = 310;
+            float altoGuia = 205;
+            GUILayout.BeginArea(new Rect(Screen.width - anchoGuia - 15, 15, anchoGuia, altoGuia), estiloCajaOscura);
             GUILayout.Space(6);
-            GUILayout.Label("🎮 Guia de Controles (Avance 1)", estiloTituloHUD);
+            GUILayout.Label("🎮 Guía de Controles", estiloTituloHUD);
             GUILayout.Space(4);
             GUILayout.Label("• [W,A,S,D] / [Flechas]: Mover a Guanajicho", estiloControles);
-            GUILayout.Label("• [Shift]: Correr", estiloControles);
-            GUILayout.Label("• [Clic Izquierdo]: Colocar defensa con cursor", estiloControles);
-            GUILayout.Label("• [Tecla E]: Colocar defensa frente al personaje", estiloControles);
-            GUILayout.Label("• [Teclas 1, 2]: Elegir tipo de defensa", estiloControles);
-            GUILayout.Label("• [Tecla G]: Adelantar oleada de invasores", estiloControles);
+            GUILayout.Label("• [Shift]: Correr (Sprint veloz)", estiloControles);
+            GUILayout.Label("• [Clic / Espacio / J]: Disparar Honda Insurgente", estiloControles);
+            GUILayout.Label("• [1, 2 / B]: Modo Construcción (Barricada/Hondero)", estiloControles);
+            GUILayout.Label("• [Q / Clic Der.]: Salir de Construcción", estiloControles);
+            GUILayout.Label("• [Tecla E]: Avivar Antorcha / Interactuar", estiloControles);
+            GUILayout.Label("• [Rueda Ratón]: Zoom Dinámico In / Out", estiloControles);
+            GUILayout.Label("• [Tecla G]: Iniciar Oleada de inmediato", estiloControles);
+            GUILayout.Label("• [Tecla H]: Ocultar/Mostrar guía", estiloControles);
             GUILayout.EndArea();
         }
 
