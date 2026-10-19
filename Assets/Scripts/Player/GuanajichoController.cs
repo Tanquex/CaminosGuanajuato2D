@@ -183,36 +183,45 @@ namespace CaminosDeGuanajuato.Player
 
         private void ActualizarAnimaciones()
         {
-            int direccionIndex = 0; // 0 = Abajo
-
-            if (Mathf.Abs(direccionEntrada.x) > Mathf.Abs(direccionEntrada.y))
+            if (direccionEntrada.x > 0.05f)
             {
-                if (direccionEntrada.x > 0)
-                {
-                    direccionIndex = 2; // Derecha
-                    if (spriteRenderer != null) spriteRenderer.flipX = false;
-                }
-                else if (direccionEntrada.x < 0)
-                {
-                    direccionIndex = 3; // Izquierda
-                    if (spriteRenderer != null) spriteRenderer.flipX = true;
-                }
+                if (spriteRenderer != null) spriteRenderer.flipX = false;
             }
-            else if (Mathf.Abs(direccionEntrada.y) > 0.001f)
+            else if (direccionEntrada.x < -0.05f)
             {
-                if (direccionEntrada.y > 0) direccionIndex = 1; // Arriba
-                else direccionIndex = 0; // Abajo
+                if (spriteRenderer != null) spriteRenderer.flipX = true;
             }
 
             if (animator != null && animator.runtimeAnimatorController != null)
             {
-                animator.SetInteger("Direction", direccionIndex);
-                animator.SetBool("IsMoving", estaMoviendose);
-                animator.SetFloat("MoveX", direccionEntrada.x);
-                animator.SetFloat("MoveY", direccionEntrada.y);
-                animator.SetFloat("Speed", direccionEntrada.magnitude * VelocidadActual);
+                // Compatibilidad con HeroKnight_AnimController (0 = Idle, 1 = Run)
+                animator.SetInteger("AnimState", estaMoviendose ? 1 : 0);
+                animator.SetBool("Grounded", true);
+
+                int direccionIndex = 0;
+                if (Mathf.Abs(direccionEntrada.x) > Mathf.Abs(direccionEntrada.y))
+                {
+                    direccionIndex = direccionEntrada.x > 0 ? 2 : 3;
+                }
+                else if (Mathf.Abs(direccionEntrada.y) > 0.001f)
+                {
+                    direccionIndex = direccionEntrada.y > 0 ? 1 : 0;
+                }
+
+                try
+                {
+                    animator.SetInteger("Direction", direccionIndex);
+                    animator.SetBool("IsMoving", estaMoviendose);
+                    animator.SetFloat("MoveX", direccionEntrada.x);
+                    animator.SetFloat("MoveY", direccionEntrada.y);
+                    animator.SetFloat("Speed", direccionEntrada.magnitude * VelocidadActual);
+                }
+                catch { }
             }
         }
+
+        // Compatibilidad con eventos de animación de Hero Knight
+        public void AE_SlideDust() { }
 
         private void ProcesarCombateHonda()
         {
@@ -245,6 +254,10 @@ namespace CaminosDeGuanajuato.Player
 
             if (presionoDisparar && temporizadorDisparo <= 0f)
             {
+                if (animator != null && animator.runtimeAnimatorController != null)
+                {
+                    animator.SetTrigger("Attack1");
+                }
                 DispararPiedraHonda();
             }
         }
