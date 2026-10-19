@@ -8,7 +8,7 @@ namespace CaminosDeGuanajuato.Core
     /// Representa suministros cívicos, monedas virreinales o garrafas de nieve tradicional
     /// que Guanajicho puede recoger para colocar más defensas o avivar la antorcha.
     /// </summary>
-    [RequireComponent(typeof(Collider2D))]
+    [RequireComponent(typeof(CircleCollider2D))]
     public class RecursoCivicoPickup : MonoBehaviour
     {
         [Header("Valor del Recurso")]
@@ -23,6 +23,8 @@ namespace CaminosDeGuanajuato.Core
         private SpriteRenderer spriteRenderer;
         private bool yaRecogido = false;
 
+        private static Sprite spriteLootCompartido = null;
+
         public void Configurar(int valor)
         {
             valorRecursos = valor;
@@ -33,8 +35,16 @@ namespace CaminosDeGuanajuato.Core
             posicionInicial = transform.position;
             spriteRenderer = GetComponent<SpriteRenderer>();
 
-            Collider2D col = GetComponent<Collider2D>();
-            if (col != null) col.isTrigger = true;
+            CircleCollider2D col = GetComponent<CircleCollider2D>();
+            if (col == null)
+            {
+                col = gameObject.AddComponent<CircleCollider2D>();
+            }
+            if (col != null)
+            {
+                col.isTrigger = true;
+                col.radius = 0.45f;
+            }
 
             // Asegurar que tenga un sprite visible si no fue asignado
             if (spriteRenderer == null)
@@ -44,7 +54,11 @@ namespace CaminosDeGuanajuato.Core
 
             if (spriteRenderer.sprite == null)
             {
-                CrearSpritePorDefecto();
+                if (spriteLootCompartido == null)
+                {
+                    spriteLootCompartido = GenerarSpritePorDefecto();
+                }
+                spriteRenderer.sprite = spriteLootCompartido;
             }
 
             spriteRenderer.sortingOrder = 9;
@@ -114,7 +128,7 @@ namespace CaminosDeGuanajuato.Core
             Destroy(gameObject);
         }
 
-        private void CrearSpritePorDefecto()
+        private static Sprite GenerarSpritePorDefecto()
         {
             Texture2D tex = new Texture2D(16, 16);
             Color dorado = new Color(0.98f, 0.8f, 0.18f, 1f);
@@ -136,7 +150,7 @@ namespace CaminosDeGuanajuato.Core
                 }
             }
             tex.Apply();
-            spriteRenderer.sprite = Sprite.Create(tex, new Rect(0, 0, 16, 16), new Vector2(0.5f, 0.5f), 16);
+            return Sprite.Create(tex, new Rect(0, 0, 16, 16), new Vector2(0.5f, 0.5f), 16);
         }
     }
 }

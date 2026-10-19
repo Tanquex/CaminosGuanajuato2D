@@ -10,7 +10,7 @@ namespace CaminosDeGuanajuato.Core
     /// Avanza siguiendo una ruta de puntos, combate barricadas que bloquean su paso
     /// y otorga recursos civicos al ser derrotado.
     /// </summary>
-    [RequireComponent(typeof(Collider2D))]
+    [RequireComponent(typeof(BoxCollider2D))]
     public class InvasorNocturno : MonoBehaviour
     {
         [Header("Estadisticas")]
@@ -190,14 +190,40 @@ namespace CaminosDeGuanajuato.Core
                 // 65% de probabilidad de soltar un botín cívico recolectable en el atrio
                 if (UnityEngine.Random.value < 0.65f)
                 {
-                    GameObject dropGO = new GameObject("Drop_RecursoCivico");
-                    dropGO.transform.position = transform.position;
-                    RecursoCivicoPickup pickup = dropGO.AddComponent<RecursoCivicoPickup>();
-                    pickup.Configurar(recompensaRecursos);
+                    try
+                    {
+                        GameObject dropGO = new GameObject("Drop_RecursoCivico");
+                        dropGO.transform.position = transform.position;
+
+                        CircleCollider2D circleCol = dropGO.AddComponent<CircleCollider2D>();
+                        if (circleCol != null)
+                        {
+                            circleCol.isTrigger = true;
+                            circleCol.radius = 0.45f;
+                        }
+
+                        RecursoCivicoPickup pickup = dropGO.AddComponent<RecursoCivicoPickup>();
+                        if (pickup != null)
+                        {
+                            pickup.Configurar(recompensaRecursos);
+                        }
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogWarning($"[InvasorNocturno] Error no critico al soltar botin: {ex.Message}");
+                    }
                 }
             }
 
-            OnInvasorDerrotado?.Invoke(this);
+            try
+            {
+                OnInvasorDerrotado?.Invoke(this);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[InvasorNocturno] Error al notificar derrota: {ex.Message}");
+            }
+
             Destroy(gameObject, 0.05f);
         }
 

@@ -76,6 +76,14 @@ namespace CaminosDeGuanajuato.Player
                 rb.interpolation = RigidbodyInterpolation2D.Interpolate;
             }
 
+            // Asegurar que Guanajicho tenga collider para recolectar botines e interactuar
+            Collider2D col = GetComponent<Collider2D>();
+            if (col == null)
+            {
+                CapsuleCollider2D cap = gameObject.AddComponent<CapsuleCollider2D>();
+                cap.size = new Vector2(0.8f, 1.2f);
+            }
+
             Debug.Log("<color=green>[Guanajicho]</color> ¡Guanajicho inicializado y listo en escena!");
         }
 
