@@ -64,11 +64,18 @@ namespace CaminosDeGuanajuato.Core
         {
             if (_instance != null && _instance != this)
             {
-                Destroy(gameObject);
+                // Solo destruir este componente duplicado. JAMÁS destruir el gameObject,
+                // ya que en las escenas comparte GameObject con HUDDefensaUI, NeveriaGameManager, etc.
+                Destroy(this);
                 return;
             }
             _instance = this;
-            DontDestroyOnLoad(gameObject);
+
+            // Proteger entre escenas únicamente si es un GameObject raíz dedicado
+            if (transform.parent == null && (gameObject.name == "AudioColonialManager_Global" || GetComponents<Component>().Length <= 3))
+            {
+                DontDestroyOnLoad(gameObject);
+            }
 
             if (audioSourceMusica == null)
             {
