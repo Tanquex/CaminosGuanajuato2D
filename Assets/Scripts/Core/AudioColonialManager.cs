@@ -11,7 +11,27 @@ namespace CaminosDeGuanajuato.Core
     /// </summary>
     public class AudioColonialManager : MonoBehaviour
     {
-        public static AudioColonialManager Instance { get; private set; }
+        private static AudioColonialManager _instance;
+        public static AudioColonialManager Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = FindFirstObjectByType<AudioColonialManager>();
+                    if (_instance == null)
+                    {
+                        GameObject go = new GameObject("AudioColonialManager_Global");
+                        _instance = go.AddComponent<AudioColonialManager>();
+                    }
+                }
+                return _instance;
+            }
+        }
+
+        [Header("Música Colonial Mexicana (Fondo)")]
+        [SerializeField] private AudioClip clipMusicaFondo;
+        [Range(0f, 1f)] [SerializeField] private float volumenMusica = 0.65f;
 
         [Header("Audio Clips Opcionales (Inspector)")]
         [SerializeField] private AudioClip clipDisparoHonda;
@@ -23,8 +43,9 @@ namespace CaminosDeGuanajuato.Core
 
         [Header("Volumen")]
         [Range(0f, 1f)] [SerializeField] private float volumenGeneral = 0.85f;
-        [Range(0f, 1f)] [SerializeField] private float volumenSFX = 0.9f;
+        [Range(0f, 1f)] [SerializeField] private float volumenSFX = 0.85f;
 
+        private AudioSource audioSourceMusica;
         private AudioSource audioSourceSFX;
         private AudioSource audioSourceCampana;
 
@@ -41,20 +62,40 @@ namespace CaminosDeGuanajuato.Core
 
         private void Awake()
         {
-            if (Instance != null && Instance != this)
+            if (_instance != null && _instance != this)
             {
                 Destroy(gameObject);
                 return;
             }
-            Instance = this;
+            _instance = this;
+            DontDestroyOnLoad(gameObject);
 
-            audioSourceSFX = gameObject.AddComponent<AudioSource>();
-            audioSourceSFX.playOnAwake = false;
+            if (audioSourceMusica == null)
+            {
+                audioSourceMusica = gameObject.AddComponent<AudioSource>();
+                audioSourceMusica.loop = true;
+                audioSourceMusica.playOnAwake = false;
+                audioSourceMusica.volume = volumenMusica * volumenGeneral;
+            }
 
-            audioSourceCampana = gameObject.AddComponent<AudioSource>();
-            audioSourceCampana.playOnAwake = false;
+            if (audioSourceSFX == null)
+            {
+                audioSourceSFX = gameObject.AddComponent<AudioSource>();
+                audioSourceSFX.playOnAwake = false;
+            }
+
+            if (audioSourceCampana == null)
+            {
+                audioSourceCampana = gameObject.AddComponent<AudioSource>();
+                audioSourceCampana.playOnAwake = false;
+            }
 
             GenerarClipsProcedurales();
+        }
+
+        private void Start()
+        {
+            IniciarMusicaDeFondo();
         }
 
         private void GenerarClipsProcedurales()
@@ -156,6 +197,135 @@ namespace CaminosDeGuanajuato.Core
                 audioSourceSFX.PlayOneShot(proceduralErrorPedido, volumenSFX * volumenGeneral * 0.85f);
             }
         }
+
+        #region Control de Música de Fondo
+
+        public void IniciarMusicaDeFondo(AudioClip nuevoClip = null)
+        {
+            if (nuevoClip != null)
+            {
+                clipMusicaFondo = nuevoClip;
+            }
+
+            if (clipMusicaFondo == null)
+            {
+                clipMusicaFondo = CargarClipWavDesdeDisco("Audio/Musica_CaminosDeGuanajuato.wav");
+            }
+
+            if (audioSourceMusica != null)
+            {
+                if (clipMusicaFondo != null)
+                {
+                    if (audioSourceMusica.clip != clipMusicaFondo || !audioSourceMusica.isPlaying)
+                    {
+                        audioSourceMusica.clip = clipMusicaFondo;
+                        audioSourceMusica.loop = true;
+                        audioSourceMusica.volume = volumenMusica * volumenGeneral;
+                        audioSourceMusica.Play();
+                        Debug.Log("<color=green>[AudioColonial]</color> 🎶 Música de fondo 'Caminos de Guanajuato' sonando en bucle.");
+                    }
+                }
+            }
+        }
+
+        public void DetenerMusicaFondo()
+        {
+            if (audioSourceMusica != null && audioSourceMusica.isPlaying)
+            {
+                audioSourceMusica.Stop();
+            }
+        }
+
+        public void PausarMusica()
+        {
+            if (audioSourceMusica != null && audioSourceMusica.isPlaying)
+            {
+                audioSourceMusica.Pause();
+            }
+        }
+
+        public void ReanudarMusica()
+        {
+            if (audioSourceMusica != null && !audioSourceMusica.isPlaying)
+            {
+                audioSourceMusica.UnPause();
+            }
+        }
+
+        public void AjustarVolumenMusica(float nuevoVolumen)
+        {
+            volumenMusica = Mathf.Clamp01(nuevoVolumen);
+            if (audioSourceMusica != null)
+            {
+                audioSourceMusica.volume = volumenMusica * volumenGeneral;
+            }
+        }
+
+        public void AjustarVolumenSFX(float nuevoVolumen)
+        {
+            volumenSFX = Mathf.Clamp01(nuevoVolumen);
+        }
+
+        public void AjustarVolumenGeneral(float nuevoVolumen)
+        {
+            volumenGeneral = Mathf.Clamp01(nuevoVolumen);
+            if (audioSourceMusica != null)
+            {
+                audioSourceMusica.volume = volumenMusica * volumenGeneral;
+            }
+        }
+
+        private AudioClip CargarClipWavDesdeDisco(string rutaRelativa)
+        {
+            try
+            {
+                string path = System.IO.Path.Combine(Application.dataPath, rutaRelativa);
+                if (!System.IO.File.Exists(path))
+                {
+                    Debug.LogWarning($"[AudioColonial] Archivo de audio no encontrado: {path}");
+                    return null;
+                }
+
+                byte[] bytes = System.IO.File.ReadAllBytes(path);
+                if (bytes.Length < 44) return null;
+
+                int channels = System.BitConverter.ToInt16(bytes, 22);
+                int sampleRate = System.BitConverter.ToInt32(bytes, 24);
+                int bitsPerSample = System.BitConverter.ToInt16(bytes, 34);
+
+                int dataIndex = 12;
+                while (dataIndex < bytes.Length - 8)
+                {
+                    string chunkId = System.Text.Encoding.ASCII.GetString(bytes, dataIndex, 4);
+                    int chunkSize = System.BitConverter.ToInt32(bytes, dataIndex + 4);
+                    if (chunkId == "data")
+                    {
+                        dataIndex += 8;
+                        int totalSamples = chunkSize / (bitsPerSample / 8);
+                        int samplesPerChannel = totalSamples / channels;
+                        float[] audioData = new float[totalSamples];
+
+                        for (int i = 0; i < totalSamples; i++)
+                        {
+                            short sample16 = System.BitConverter.ToInt16(bytes, dataIndex + i * 2);
+                            audioData[i] = sample16 / 32768f;
+                        }
+
+                        AudioClip clip = AudioClip.Create("Musica_CaminosDeGuanajuato", samplesPerChannel, channels, sampleRate, false);
+                        clip.SetData(audioData, 0);
+                        return clip;
+                    }
+                    dataIndex += 8 + chunkSize;
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[AudioColonial] Error leyendo archivo WAV {rutaRelativa}: {ex.Message}");
+            }
+            return null;
+        }
+
+        #endregion
 
         #region Generadores de Formas de Onda
 

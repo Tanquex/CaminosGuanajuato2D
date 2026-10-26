@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using CaminosDeGuanajuato.Core;
 
 namespace CaminosDeGuanajuato.UI
 {
@@ -52,6 +53,12 @@ namespace CaminosDeGuanajuato.UI
             pantallaCompleta = Screen.fullScreen;
             CrearTexturasGUI();
             AjustarFondoACamara();
+
+            // Iniciar música tradicional colonial desde el primer instante en el Menú Principal
+            if (AudioColonialManager.Instance != null)
+            {
+                AudioColonialManager.Instance.IniciarMusicaDeFondo();
+            }
         }
 
         private void Update()
@@ -280,8 +287,16 @@ namespace CaminosDeGuanajuato.UI
             // Slider Volumen General
             GUILayout.BeginHorizontal();
             GUILayout.Label($"Volumen General: {Mathf.RoundToInt(volumenGeneral * 100)}%", estiloTextoModal, GUILayout.Width(170));
-            volumenGeneral = GUILayout.HorizontalSlider(volumenGeneral, 0f, 1f);
-            AudioListener.volume = volumenGeneral;
+            float nuevoGen = GUILayout.HorizontalSlider(volumenGeneral, 0f, 1f);
+            if (Mathf.Abs(nuevoGen - volumenGeneral) > 0.001f)
+            {
+                volumenGeneral = nuevoGen;
+                AudioListener.volume = volumenGeneral;
+                if (AudioColonialManager.Instance != null)
+                {
+                    AudioColonialManager.Instance.AjustarVolumenGeneral(volumenGeneral);
+                }
+            }
             GUILayout.EndHorizontal();
 
             GUILayout.Space(8);
@@ -289,7 +304,15 @@ namespace CaminosDeGuanajuato.UI
             // Slider Musica
             GUILayout.BeginHorizontal();
             GUILayout.Label($"Música Tradicional: {Mathf.RoundToInt(volumenMusica * 100)}%", estiloTextoModal, GUILayout.Width(170));
-            volumenMusica = GUILayout.HorizontalSlider(volumenMusica, 0f, 1f);
+            float nuevaMus = GUILayout.HorizontalSlider(volumenMusica, 0f, 1f);
+            if (Mathf.Abs(nuevaMus - volumenMusica) > 0.001f)
+            {
+                volumenMusica = nuevaMus;
+                if (AudioColonialManager.Instance != null)
+                {
+                    AudioColonialManager.Instance.AjustarVolumenMusica(volumenMusica);
+                }
+            }
             GUILayout.EndHorizontal();
 
             GUILayout.Space(8);
@@ -297,7 +320,15 @@ namespace CaminosDeGuanajuato.UI
             // Slider SFX
             GUILayout.BeginHorizontal();
             GUILayout.Label($"Efectos de Sonido: {Mathf.RoundToInt(volumenSFX * 100)}%", estiloTextoModal, GUILayout.Width(170));
-            volumenSFX = GUILayout.HorizontalSlider(volumenSFX, 0f, 1f);
+            float nuevoSFX = GUILayout.HorizontalSlider(volumenSFX, 0f, 1f);
+            if (Mathf.Abs(nuevoSFX - volumenSFX) > 0.001f)
+            {
+                volumenSFX = nuevoSFX;
+                if (AudioColonialManager.Instance != null)
+                {
+                    AudioColonialManager.Instance.AjustarVolumenSFX(volumenSFX);
+                }
+            }
             GUILayout.EndHorizontal();
 
             GUILayout.Space(10);
