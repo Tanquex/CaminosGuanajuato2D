@@ -14,13 +14,16 @@
 
 - [El Juego](#-el-juego)
   - [Sinopsis y Lore](#sinopsis-y-lore)
-  - [Objetivo Principal](#objetivo-principal)
+  - [Desglose de Misiones y Niveles](#desglose-de-misiones-y-niveles)
   - [Mecánicas Clave](#mecánicas-clave)
 - [🎮 Controles del Juego](#-controles-del-juego)
-- [🛡️ Elementos y Unidades](#️-elementos-y-unidades)
-  - [Protagonista](#protagonista)
-  - [Defensas Populares](#defensas-populares)
-  - [Enemigos](#enemigos)
+  - [Controles Nivel 1: Defensa del Atrio](#controles-nivel-1-defensa-del-atrio)
+  - [Controles Nivel 2: Desafío de Nieves](#controles-nivel-2-desafío-de-nieves)
+- [🛡️ Elementos, Unidades y Personajes](#️-elementos-unidades-y-personajes)
+  - [Elenco Principal](#elenco-principal)
+  - [Defensas Populares (Nivel 1)](#defensas-populares-nivel-1)
+  - [Enemigos Invasores (Nivel 1)](#enemigos-invasores-nivel-1)
+  - [Sabores Exóticos de Nieve (Nivel 2)](#sabores-exóticos-de-nieve-nivel-2)
 - [📂 Estructura del Proyecto](#-estructura-del-proyecto)
 - [🚀 Pasos de Instalación y Ejecución](#-pasos-de-instalación-y-ejecución)
   - [Requisitos Previos](#requisitos-previos)
@@ -35,28 +38,27 @@
 ## 🎯 El Juego
 
 ### Sinopsis y Lore
-Es la noche previa al levantamiento en Dolores Hidalgo. Una misteriosa horda de **Invasores Nocturnos** intenta sabotear el movimiento libertario asaltando el atrio de la Parroquia de Nuestra Señora de los Dolores para apagar la **Antorcha Libertaria** antes de que repiquen las campanas de libertad.
+El jugador asume el rol de **Guanajicho**, un joven cronista y aprendiz de alfarero en Dolores Hidalgo C.I.N. en septiembre de 1810. Para apoyar la causa independentista y preservar las memorias vivas de Guanajuato frente al olvido, debe resolver las misiones locales del pueblo, ganar el respaldo popular de Don Chon y defender el atrio parroquial para obtener el **Salvoconducto Insurgente** que habilitará la ruta norte hacia **San Felipe**.
 
-Encarnas a **Guanajicho**, un valiente insurgente armado con su tradicional honda de cuero, espada virreinal y escudo, quien junto a los habitantes del pueblo organizará barricadas coloniales y honderos para resistir las oleadas invasoras.
-
-### Objetivo Principal
-* **Sobrevivir a las 5 oleadas consecutivas** de invasores que ingresan por las 4 calles cardinales de la plaza (Norte, Sur, Este y Oeste).
-* **Impedir a toda costa que la salud de la Antorcha Libertaria llegue a 0**. Si la antorcha se extingue, el juego termina en derrota.
-* **Administrar los Recursos Cívicos**: recolectar el botín virreinal dejado por los invasores para colocar barricadas y desplegar honderos aliados en la plaza.
-
-### Mecánicas Clave
-* **Control Directo 2D**: Movimiento fluido en 8 direcciones con aceleración de sprint y animación integrada (Idle, Run y Attack).
-* **Combate con Honda Activa**: Apunta con el ratón o en dirección de movimiento para disparar proyectiles de piedra contra los invasores.
-* **Defensa Táctica en Cuadrícula (Grid Placement)**: Sistema de construcción en tiempo real con vista previa fantasma de color para validar posiciones de barricadas y honderos.
-* **Economía de Botín**: Probabilidad de soltar botines cívicos al derrotar enemigos con animación flotante y recolección al contacto.
-* **Llama Libertaria Crepitante**: Animación procedural por ruido Perlin que modula la escala y el color cálido de la antorcha en tiempo real.
-* **Audio de Época Procedural**: Generador acústico 16-bit integrado en C# que sintetiza campanadas de iglesia colonial, disparos de honda, impactos secos y tintineos de monedas sin necesidad de librerías externas.
-* **Cámara Dinámica con Zoom**: Seguimiento suave con anticipación de movimiento, límites automáticos de encuadre en la plaza y zoom ortográfico con la rueda del ratón.
+### Desglose de Misiones y Niveles
+* **Nivel 1: La Defensa del Atrio Parroquial** (*Tower Defense 2D Activo*):
+  * Sobrevivir a 5 oleadas de invasores nocturnos que atacan desde los 4 puntos cardinales de la plaza.
+  * Proteger la Antorcha Libertaria y colocar barricadas y honderos acumulando recursos cívicos.
+  * Recompensa: **Emblema de la Libertad (Medalla 1)**.
+* **Nivel 2: El Desafío de las Nieves Tradicionales** (*Gestión Culinaria y QTE Contra Reloj*):
+  * Asistir a **Don Chon (El Nevero Mayor)** en el quiosco del jardín principal.
+  * Atender a 8 comensales preparando nieves exóticas (*Garambullo, Borrachita, Queso con Fresa, Aguacate y Limón virreinal*) en barquillos de trigo o vasos de barro.
+  * Raspar hielo en la barrica tradicional y servir los pedidos antes de agotar la paciencia de los clientes.
+  * Recompensa: **Cuchara Dorada Artesanal (Medalla 2)**.
+* **Overworld Interactivo de Guanajuato**:
+  * Cartografía estilizada que conecta los municipios del estado.
+  * Dolores Hidalgo desbloqueado desde el inicio; San Felipe custodiado hasta completar 3/3 misiones.
 
 ---
 
 ## 🎮 Controles del Juego
 
+### Controles Nivel 1: Defensa del Atrio
 | Acción | Teclado / Ratón | Descripción |
 | :--- | :--- | :--- |
 | **Moverse** | `W, A, S, D` o `Flechas` | Desplaza a Guanajicho en 8 direcciones por la plaza colonial. |
@@ -65,67 +67,86 @@ Encarnas a **Guanajicho**, un valiente insurgente armado con su tradicional hond
 | **Modo Construcción** | `Tecla B` o Clic en botón HUD | Activa/desactiva el modo de colocación de defensas. |
 | **Colocar Defensa** | `Clic Izquierdo` (Modo B) o `Tecla E` | Coloca la defensa seleccionada en la cuadrícula o frente a ti. |
 | **Cambiar Defensa** | `Tecla 1` (Barricada) / `Tecla 2` (Hondero) | Alterna entre las opciones defensivas del catálogo. |
-| **Forzar/Avanzar Oleada** | `Tecla G` | Salta la cuenta regresiva e inicia la siguiente oleada de inmediato. |
+| **Avivar Antorcha** | `Tecla E` (Cerca de la antorcha) | Gasta 10 puntos cívicos para restaurar +25 HP a la flama. |
+| **Forzar Oleada** | `Tecla G` | Salta la cuenta regresiva e inicia la siguiente oleada de inmediato. |
 | **Zoom de Cámara** | `Rueda del Ratón (Scroll)` | Acerca o aleja la vista panorámica del atrio colonial. |
+
+### Controles Nivel 2: Desafío de Nieves
+| Acción | Teclado / Ratón | Descripción |
+| :--- | :--- | :--- |
+| **Elegir Base** | `Tecla 1` (Barquillo) / `Tecla 2` (Vaso) | Selecciona el recipiente de la nieve en el mostrador. |
+| **Raspar Hielo** | `Barra Espaciadora` (Pulsar/Mantener) | Bate y raspa el hielo artesanal en la garrafa de madera. |
+| **Sabor Garambullo** | `Tecla Q` o Clic en botón | Vierte pulpa silvestre de garambullo (púrpura cactáceo). |
+| **Sabor Borrachita**| `Tecla W` o Clic en botón | Vierte miel tradicional de agave y biznaga (ámbar dorado). |
+| **Sabor Queso/Fresa**| `Tecla E` o Clic en botón | Combina cubos de queso fresco y fresa del Bajío (rosa crema). |
+| **Sabor Aguacate**  | `Tecla R` o Clic en botón | Agrega pulpa exótica de aguacate (verde olivo). |
+| **Sabor Limón**     | `Tecla T` o Clic en botón | Exprime jugo de limón virreinal fresco (verde lima). |
+| **Servir Pedido**   | `Tecla Enter` / `Keypad Enter` | Entrega la nieve terminada al comensal en espera. |
+| **Desechar / Tirar**| `Tecla Backspace` o `Delete` | Descarta la preparación actual si te equivocaste de receta. |
 
 ---
 
-## 🛡️ Elementos y Unidades
+## 🛡️ Elementos, Unidades y Personajes
 
-### Protagonista
-* **Guanajicho**:
-  * Salud y resistencia equilibrada.
-  * Armado con espada, escudo y honda insurgente.
-  * Recoge botines cívicos caídos al aproximarse a ellos.
+### Elenco Principal
+* **Guanajicho**: Joven explorador y protagonista jugable; defiende el atrio con su honda y atiende la nevería con destreza.
+* **Don Chon (El Nevero Mayor)**: PNJ y mentor culinario en el quiosco; enseña las recetas y califica la rapidez del jugador.
+* **El Insurgente Guardián**: PNJ táctico en el atrio que guía durante la defensa nocturna.
 
-### Defensas Populares
-* **Barricada Colonial** (*Costo: 25 Puntos Cívicos*):
-  * Estructura de madera maciza y herrería colonial.
-  * Bloquea físicamente el avance de los invasores y absorbe daño.
-* **Hondero Insurgente** (*Costo: 50 Puntos Cívicos*):
-  * Aliado patriota que vigila un radio de acción.
-  * Detecta invasores automáticamente y les dispara proyectiles guiados de piedra.
-
-### Enemigos
-* **Invasor Nocturno**:
-  * Avanza siguiendo rutas estratégicas hacia la Antorcha Libertaria.
-  * Si se topa con una barricada, se detiene a atacarla hasta destruirla.
-  * Al ser derrotado otorga puntos cívicos y puede soltar botines en el suelo.
+### Sabores Exóticos de Nieve (Nivel 2)
+1. **Garambullo**: Cactácea silvestre de la región semidesértica dolorense (#7E22CE).
+2. **Borrachita**: Receta festiva con toque de miel y biznaga (#D97706).
+3. **Queso con Fresa**: Clásica delicia del Bajío que mezcla queso artesanal y fresa dulce (#F43F5E).
+4. **Aguacate**: Nieve exótica emblemática con pulpa cremosa (#65A30D).
+5. **Limón Virreinal**: La receta clásica refrescante de los portales coloniales (#84CC16).
 
 ---
 
 ## 📂 Estructura del Proyecto
 
 ```text
-LocasAventurasDH/
+CaminosGuanajuato2D/
 ├── Assets/
 │   ├── Scenes/
-│   │   ├── MainMenu.unity            # Menú principal con opciones interactivas
-│   │   ├── NivelPruebas_Defensa.unity# Nivel 1: Atrio Parroquial de Dolores Hidalgo
-│   │   └── SampleScene.unity         # Escena complementaria de desarrollo
+│   │   ├── MainMenu.unity                 # Menú principal interactivo
+│   │   ├── Overworld_MapaGuanajuato.unity # Selector de municipios y misiones del estado
+│   │   ├── NivelPruebas_Defensa.unity     # Nivel 1: Atrio Parroquial (Tower Defense)
+│   │   ├── Nivel2_DesafioNieves.unity     # Nivel 2: Quiosco de Nieves (Gestión y QTE)
+│   │   └── SampleScene.unity              # Escena complementaria
 │   ├── Scripts/
 │   │   ├── Core/
-│   │   │   ├── AntorchaLibertaria.cs   # Lógica y animación de la flama objetivo
-│   │   │   ├── InvasorNocturno.cs      # IA de movimiento, ataque y derrota de enemigos
-│   │   │   ├── OleadasSpawner.cs       # Gestor multidireccional de oleadas (4 puntos)
-│   │   │   ├── RecursosCivicosManager.cs # Sistema de puntos y economía
-│   │   │   ├── RecursoCivicoPickup.cs  # Botines flotantes recolectables
-│   │   │   └── AudioColonialManager.cs # Sintetizador procedural de audio colonial
+│   │   │   ├── ProgresoJuegoManager.cs    # Persistencia PlayerPrefs, medallas y desbloqueos
+│   │   │   ├── AntorchaLibertaria.cs      # Lógica y animación de la flama objetivo
+│   │   │   ├── InvasorNocturno.cs         # IA de movimiento, ataque y botines de enemigos
+│   │   │   ├── OleadasSpawner.cs          # Gestor multidireccional de oleadas (4 puntos)
+│   │   │   ├── RecursosCivicosManager.cs  # Sistema de puntos y economía
+│   │   │   ├── RecursoCivicoPickup.cs     # Botines flotantes recolectables
+│   │   │   └── AudioColonialManager.cs    # Sintetizador procedural 16-bit de audio colonial
+│   │   ├── Overworld/
+│   │   │   ├── OverworldManager.cs        # Cartografía estatal y candado de San Felipe
+│   │   │   └── SelectorMisionesUI.cs      # Selector de las 3 misiones de Dolores Hidalgo
+│   │   ├── Nieves/
+│   │   │   ├── NeveriaGameManager.cs      # Administrador de la jornada, cuota de clientes y medallas
+│   │   │   ├── PedidoNieve.cs             # Modelo de recetas, recipientes y sabores exóticos
+│   │   │   ├── MesaPreparacion.cs         # Mostrador de trabajo (base, hielo y sabores)
+│   │   │   ├── ClienteTurista.cs          # IA de comensales y barra de paciencia
+│   │   │   ├── DonChonConsejero.cs        # Mentoría, diálogos y reacciones de Don Chon
+│   │   │   └── HUDNeveriaUI.cs            # Interfaz gráfica colonial de la nevería
 │   │   ├── Defense/
-│   │   │   ├── ColocadorDefensas.cs    # Sistema de grid, validación y colocación
-│   │   │   ├── DefensaElemento.cs      # Salud y comportamiento de barricadas y torres
-│   │   │   └── ProyectilDefensa.cs     # Balística y daño de piedras
+│   │   │   ├── ColocadorDefensas.cs       # Sistema de cuadrícula y previsualización fantasma
+│   │   │   ├── DefensaElemento.cs         # Salud y comportamiento de barricadas y honderos
+│   │   │   └── ProyectilDefensa.cs        # Balística y daño de piedras
 │   │   ├── Player/
-│   │   │   ├── GuanajichoController.cs # Movimiento, límites de mapa y disparo
-│   │   │   └── CameraFollow2D.cs       # Cámara cinemática, zoom y bounds
+│   │   │   ├── GuanajichoController.cs    # Movimiento 8 direcciones, sprint, límites y honda
+│   │   │   └── CameraFollow2D.cs          # Cámara cinematográfica, zoom y encuadre
 │   │   └── UI/
-│   │       ├── MainMenuManager.cs      # Lógica de navegación del menú principal
-│   │       └── HUDDefensaUI.cs         # Banners, avisos, temporizador y GameOver
-│   ├── Prefabs/                        # Prefabs de Guanajicho, defensas e invasores
-│   ├── Sprites/                        # Fondos pixel art del atrio y texturas UI
-│   ├── Hero Knight - Pixel Art/        # Animaciones y spritesheets del protagonista
-│   └── Audio/                          # Directorios de BGM y SFX de reserva
-└── ProjectSettings/                    # Configuración de Quality, Tags, Physics2D e Input
+│   │       ├── MainMenuManager.cs         # Navegación del menú hacia el Overworld
+│   │       └── HUDDefensaUI.cs            # Banners, telemetría y modales de Nivel 1
+│   ├── Prefabs/                           # Prefabs de Guanajicho, defensas, comensales e invasores
+│   ├── Sprites/                           # Fondos coloniales y texturas UI
+│   ├── Hero Knight - Pixel Art/           # Spritesheets del protagonista
+│   └── Audio/                             # BGM y SFX de reserva
+└── ProjectSettings/                       # EditorBuildSettings, Input, Tags y Physics2D
 ```
 
 ---

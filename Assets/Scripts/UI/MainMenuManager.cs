@@ -15,8 +15,8 @@ namespace CaminosDeGuanajuato.UI
     /// </summary>
     public class MainMenuManager : MonoBehaviour
     {
-        [Header("Escena del Juego")]
-        [SerializeField] private string nombreEscenaJuego = "NivelPruebas_Defensa";
+        [Header("Escena del Overworld / Mapa")]
+        [SerializeField] private string nombreEscenaJuego = "Overworld_MapaGuanajuato";
 
         [Header("Imagen de Fondo")]
         [SerializeField] private SpriteRenderer fondoSpriteRenderer;
@@ -195,9 +195,9 @@ namespace CaminosDeGuanajuato.UI
             // Posicion proporcional respecto a la resolucion de la pantalla
             // En la ilustracion 16:9, el cartel está centrado-izquierda: X: ~31%..41%, Y: ~52%..77%
             float anchoCartel = Mathf.Clamp(Screen.width * 0.17f, 210f, 270f);
-            float altoCartel = 240f;
+            float altoCartel = 285f;
             float xCartel = Screen.width * 0.355f - (anchoCartel * 0.5f);
-            float yCartel = Screen.height * 0.55f;
+            float yCartel = Screen.height * 0.53f;
 
             GUILayout.BeginArea(new Rect(xCartel, yCartel, anchoCartel, altoCartel));
             GUILayout.Space(5);
@@ -208,7 +208,17 @@ namespace CaminosDeGuanajuato.UI
                 IniciarJuego();
             }
 
-            GUILayout.Space(8);
+            GUILayout.Space(6);
+
+            // Acceso directo de prueba para Nivel 2
+            if (DibujarBotonMenu("🍨 PROBAR NIVEL 2"))
+            {
+                Debug.Log("<color=cyan>[MainMenu]</color> Accediendo directamente a Nivel 2: Desafío de Nieves.");
+                Time.timeScale = 1f;
+                SceneManager.LoadScene("Nivel2_DesafioNieves");
+            }
+
+            GUILayout.Space(6);
 
             // Boton 2: CONTINUE
             if (DibujarBotonMenu("CONTINUE"))
@@ -351,14 +361,30 @@ namespace CaminosDeGuanajuato.UI
 
         public void IniciarJuego()
         {
-            Debug.Log($"<color=green>[MainMenu]</color> Iniciando aventura en: {nombreEscenaJuego}");
-            SceneManager.LoadScene(nombreEscenaJuego);
+            Debug.Log($"<color=green>[MainMenu]</color> Iniciando aventura hacia el mapa de misiones: {nombreEscenaJuego}");
+            try
+            {
+                SceneManager.LoadScene(nombreEscenaJuego);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[MainMenu] No se pudo cargar {nombreEscenaJuego}, cargando nivel de pruebas: {ex.Message}");
+                SceneManager.LoadScene("NivelPruebas_Defensa");
+            }
         }
 
         public void ContinuarJuego()
         {
-            Debug.Log($"<color=cyan>[MainMenu]</color> Continuando partida guardada...");
-            SceneManager.LoadScene(nombreEscenaJuego);
+            Debug.Log($"<color=cyan>[MainMenu]</color> Continuando partida en: {nombreEscenaJuego}");
+            try
+            {
+                SceneManager.LoadScene(nombreEscenaJuego);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[MainMenu] Respaldo al nivel de pruebas: {ex.Message}");
+                SceneManager.LoadScene("NivelPruebas_Defensa");
+            }
         }
 
         public void SalirDelJuego()

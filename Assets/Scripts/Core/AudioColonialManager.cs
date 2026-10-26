@@ -35,6 +35,9 @@ namespace CaminosDeGuanajuato.Core
         private AudioClip proceduralMoneda;
         private AudioClip proceduralColocar;
         private AudioClip proceduralAlerta;
+        private AudioClip proceduralRasparHielo;
+        private AudioClip proceduralPedidoCompletado;
+        private AudioClip proceduralErrorPedido;
 
         private void Awake()
         {
@@ -62,6 +65,9 @@ namespace CaminosDeGuanajuato.Core
             proceduralMoneda = CrearClipMoneda();
             proceduralColocar = CrearClipColocar();
             proceduralAlerta = CrearClipAlerta();
+            proceduralRasparHielo = CrearClipRasparHielo();
+            proceduralPedidoCompletado = CrearClipPedidoCompletado();
+            proceduralErrorPedido = CrearClipErrorPedido();
         }
 
         public void ReproducirDisparoHonda()
@@ -121,6 +127,33 @@ namespace CaminosDeGuanajuato.Core
             {
                 audioSourceSFX.pitch = 1.0f;
                 audioSourceSFX.PlayOneShot(clip, volumenSFX * volumenGeneral * 0.95f);
+            }
+        }
+
+        public void ReproducirRasparHielo()
+        {
+            if (proceduralRasparHielo != null)
+            {
+                audioSourceSFX.pitch = Random.Range(0.92f, 1.15f);
+                audioSourceSFX.PlayOneShot(proceduralRasparHielo, volumenSFX * volumenGeneral * 0.7f);
+            }
+        }
+
+        public void ReproducirPedidoCompletado()
+        {
+            if (proceduralPedidoCompletado != null)
+            {
+                audioSourceSFX.pitch = 1.0f;
+                audioSourceSFX.PlayOneShot(proceduralPedidoCompletado, volumenSFX * volumenGeneral * 0.9f);
+            }
+        }
+
+        public void ReproducirErrorPedido()
+        {
+            if (proceduralErrorPedido != null)
+            {
+                audioSourceSFX.pitch = 1.0f;
+                audioSourceSFX.PlayOneShot(proceduralErrorPedido, volumenSFX * volumenGeneral * 0.85f);
             }
         }
 
@@ -258,6 +291,69 @@ namespace CaminosDeGuanajuato.Core
             }
 
             AudioClip clip = AudioClip.Create("SFX_AlertaInvasion", numSamples, 1, sampleRate, false);
+            clip.SetData(samples, 0);
+            return clip;
+        }
+
+        private AudioClip CrearClipRasparHielo()
+        {
+            int sampleRate = 44100;
+            float duracion = 0.18f;
+            int numSamples = (int)(sampleRate * duracion);
+            float[] samples = new float[numSamples];
+
+            for (int i = 0; i < numSamples; i++)
+            {
+                float t = (float)i / sampleRate;
+                float env = Mathf.Sin(Mathf.PI * (float)i / numSamples);
+                float ruido = (Random.value * 2f - 1f) * 0.85f;
+                float crujido = Mathf.Sin(2f * Mathf.PI * 1800f * t) * 0.25f;
+                samples[i] = (ruido + crujido) * env * 0.5f;
+            }
+
+            AudioClip clip = AudioClip.Create("SFX_RasparHielo", numSamples, 1, sampleRate, false);
+            clip.SetData(samples, 0);
+            return clip;
+        }
+
+        private AudioClip CrearClipPedidoCompletado()
+        {
+            int sampleRate = 44100;
+            float duracion = 0.38f;
+            int numSamples = (int)(sampleRate * duracion);
+            float[] samples = new float[numSamples];
+
+            // Acorde alegre de campanillas virreinales (Do mayor: C5, E5, G5, C6)
+            for (int i = 0; i < numSamples; i++)
+            {
+                float t = (float)i / sampleRate;
+                float env = Mathf.Exp(-t * 9f);
+                float freq = t < 0.08f ? 523.25f : (t < 0.16f ? 659.25f : (t < 0.24f ? 783.99f : 1046.50f));
+                samples[i] = Mathf.Sin(2f * Mathf.PI * freq * t) * env * 0.6f;
+            }
+
+            AudioClip clip = AudioClip.Create("SFX_PedidoCompletado", numSamples, 1, sampleRate, false);
+            clip.SetData(samples, 0);
+            return clip;
+        }
+
+        private AudioClip CrearClipErrorPedido()
+        {
+            int sampleRate = 44100;
+            float duracion = 0.25f;
+            int numSamples = (int)(sampleRate * duracion);
+            float[] samples = new float[numSamples];
+
+            for (int i = 0; i < numSamples; i++)
+            {
+                float t = (float)i / sampleRate;
+                float env = 1f - (float)i / numSamples;
+                float onda1 = Mathf.Sin(2f * Mathf.PI * 140f * t);
+                float onda2 = Mathf.Sin(2f * Mathf.PI * 135f * t); // Batimiento disonante
+                samples[i] = (onda1 + onda2) * 0.5f * env * 0.6f;
+            }
+
+            AudioClip clip = AudioClip.Create("SFX_ErrorPedido", numSamples, 1, sampleRate, false);
             clip.SetData(samples, 0);
             return clip;
         }

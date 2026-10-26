@@ -461,31 +461,52 @@ namespace CaminosDeGuanajuato.UI
             GUILayout.EndArea();
         }
 
+        private bool progresoVictoriaRegistrado = false;
+
         private void DibujarPantallaVictoria()
         {
+            if (!progresoVictoriaRegistrado)
+            {
+                progresoVictoriaRegistrado = true;
+                if (ProgresoJuegoManager.Instance != null)
+                {
+                    ProgresoJuegoManager.Instance.RegistrarMisionCompletada(TipoMision.Dolores_TowerDefense);
+                }
+                else
+                {
+                    PlayerPrefs.SetInt(ProgresoJuegoManager.KEY_MISION1, 1);
+                    PlayerPrefs.Save();
+                }
+            }
+
             GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), texturaFondoOverlay);
 
-            float ancho = 540;
-            float alto = 260;
+            float ancho = 560;
+            float alto = 270;
             float x = (Screen.width - ancho) * 0.5f;
             float y = (Screen.height - alto) * 0.5f;
 
             GUILayout.BeginArea(new Rect(x, y, ancho, alto), estiloCajaVictoria);
-            GUILayout.Space(15);
+            GUILayout.Space(14);
             GUILayout.Label("⭐ ¡VICTORIA EN DOLORES HIDALGO! ⭐", estiloTituloBanner);
             GUILayout.Label("¡Has defendido la Cuna de la Libertad!", estiloNivelBanner);
-            GUILayout.Space(10);
-            GUILayout.Label("La Antorcha Libertaria sigue encendida y los invasores han sido repelidos.\nHas obtenido el Emblema de la Libertad (Medalla 1).\n\n¡Felicidades, Guanajicho!", estiloTextoBanner);
-            GUILayout.Space(16);
+            GUILayout.Space(8);
+            GUILayout.Label("La Antorcha Libertaria sigue encendida y los invasores han sido repelidos.\nHas obtenido el Emblema de la Libertad (Medalla 1).\n¡El Desafío de las Nieves Tradicionales está listo en el quiosco!", estiloTextoBanner);
+            GUILayout.Space(14);
 
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("🔄 JUGAR DE NUEVO", estiloBotonReinicio, GUILayout.Width(190), GUILayout.Height(44)))
+            if (GUILayout.Button("🔄 REPETIR", estiloBotonReinicio, GUILayout.Width(130), GUILayout.Height(42)))
             {
                 ReiniciarNivel();
             }
-            GUILayout.Space(12);
-            if (GUILayout.Button("🏠 MENÚ PRINCIPAL", estiloBotonReinicio, GUILayout.Width(190), GUILayout.Height(44)))
+            GUILayout.Space(8);
+            if (GUILayout.Button("🗺️ MAPA / MISIONES", estiloBotonReinicio, GUILayout.Width(200), GUILayout.Height(42)))
+            {
+                IrAlOverworld();
+            }
+            GUILayout.Space(8);
+            if (GUILayout.Button("🏠 MENÚ", estiloBotonReinicio, GUILayout.Width(130), GUILayout.Height(42)))
             {
                 IrAlMenuPrincipal();
             }
@@ -493,6 +514,12 @@ namespace CaminosDeGuanajuato.UI
             GUILayout.EndHorizontal();
 
             GUILayout.EndArea();
+        }
+
+        public void IrAlOverworld()
+        {
+            Time.timeScale = 1f;
+            SceneManager.LoadScene("Overworld_MapaGuanajuato");
         }
 
         public void ReiniciarNivel()
