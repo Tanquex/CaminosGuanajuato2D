@@ -73,10 +73,10 @@ namespace CaminosDeGuanajuato.Overworld
             AsegurarFondoMapa();
             AjustarFondoCamara();
 
-            // Abrir automáticamente el selector de misiones de Dolores para acceso directo
+            // Iniciar mostrando directamente el mapa regional con los nodos de Dolores y San Felipe
             if (selectorMisionesDolores != null)
             {
-                selectorMisionesDolores.Abrir();
+                selectorMisionesDolores.Cerrar();
             }
         }
 
@@ -336,6 +336,7 @@ namespace CaminosDeGuanajuato.Overworld
             {
                 if (GUILayout.Button("🌾 SAN FELIPE\n(¡Camino Norte Abierto!)", estiloBotonNodoSanFelipe, GUILayout.Height(62)))
                 {
+                    if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
                     ViajarASanFelipe();
                 }
                 GUILayout.Label("✨ Salvoconducto Obtenido", estiloSubtitulo);
@@ -344,6 +345,7 @@ namespace CaminosDeGuanajuato.Overworld
             {
                 if (GUILayout.Button($"🔒 SAN FELIPE\n({completadasDolores}/3 Misiones Requeridas)", estiloBotonNodoBloqueado, GUILayout.Height(62)))
                 {
+                    if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
                     mostrarAvisoBloqueoSanFelipe = true;
                     temporizadorAviso = 4.0f;
                 }
@@ -386,6 +388,7 @@ namespace CaminosDeGuanajuato.Overworld
 
             if (GUILayout.Button("⬅ VOLVER AL MENÚ", estiloBotonVolver, GUILayout.Width(180), GUILayout.Height(38)))
             {
+                if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
                 VolverAlMenu();
             }
 
@@ -393,6 +396,7 @@ namespace CaminosDeGuanajuato.Overworld
 
             if (GUILayout.Button("🍨 JUGAR NIVEL 2: NIEVES", estiloBotonNodoDolores, GUILayout.Width(240), GUILayout.Height(38)))
             {
+                if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
                 Time.timeScale = 1f;
                 SceneManager.LoadScene("Nivel2_DesafioNieves");
             }
@@ -433,6 +437,7 @@ namespace CaminosDeGuanajuato.Overworld
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("ENTENDIDO", estiloBotonVolver, GUILayout.Width(140), GUILayout.Height(32)))
             {
+                if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
                 mostrarAvisoBloqueoSanFelipe = false;
             }
             GUILayout.FlexibleSpace();
@@ -443,6 +448,7 @@ namespace CaminosDeGuanajuato.Overworld
 
         public void AbrirMisionesDolores()
         {
+            if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
             if (selectorMisionesDolores != null)
             {
                 selectorMisionesDolores.Abrir();
