@@ -59,6 +59,15 @@ namespace CaminosDeGuanajuato.Nieves
 
         private float tiempoUltimoRaspado = -1f;
 
+        // Estado de Pausa y Opciones
+        private bool estaPausado = false;
+        private bool mostrarOpcionesPausa = false;
+
+        private float volumenGeneral = 0.85f;
+        private float volumenMusica = 0.65f;
+        private float volumenSFX = 0.85f;
+        private bool pantallaCompleta = true;
+
         public Texture2D ObtenerIconoRecipiente(TipoRecipiente rec)
         {
             return rec switch
@@ -85,6 +94,36 @@ namespace CaminosDeGuanajuato.Nieves
         private void Start()
         {
             CrearTexturas();
+            Time.timeScale = 1f;
+            pantallaCompleta = Screen.fullScreen;
+
+            if (AudioColonialManager.Instance != null)
+            {
+                volumenGeneral = AudioColonialManager.Instance.VolumenGeneral;
+                volumenMusica = AudioColonialManager.Instance.VolumenMusica;
+                volumenSFX = AudioColonialManager.Instance.VolumenSFX;
+            }
+        }
+
+        private void Update()
+        {
+            if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.P))
+            {
+                if (NeveriaGameManager.Instance != null &&
+                    NeveriaGameManager.Instance.EstadoJuego != EstadoJuegoNeveria.Victoria &&
+                    NeveriaGameManager.Instance.EstadoJuego != EstadoJuegoNeveria.Derrota)
+                {
+                    if (mostrarOpcionesPausa)
+                    {
+                        mostrarOpcionesPausa = false;
+                        if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
+                    }
+                    else
+                    {
+                        AlternarPausa();
+                    }
+                }
+            }
         }
 
         private Texture2D CargarTexturaAsset(string rutaRelativa)
@@ -338,6 +377,20 @@ namespace CaminosDeGuanajuato.Nieves
                 return;
             }
 
+            // Si el juego está pausado, dibujar modal de pausa u opciones
+            if (estaPausado)
+            {
+                if (mostrarOpcionesPausa)
+                {
+                    DibujarModalOpcionesPausa();
+                }
+                else
+                {
+                    DibujarMenuPausa();
+                }
+                return;
+            }
+
             // 1. Barra Superior Compacta de Telemetría
             DibujarBarraSuperior();
 
@@ -377,7 +430,13 @@ namespace CaminosDeGuanajuato.Nieves
             // Temporizador y Puntaje
             float t = NeveriaGameManager.Instance.TiempoRestante;
             GUILayout.Label($"⏳ Tiempo: {Mathf.CeilToInt(t):D2}s", estiloTemporizador, GUILayout.Width(120));
-            GUILayout.Label($"⭐ Puntos: {NeveriaGameManager.Instance.PuntajeTotal}", estiloPuntaje, GUILayout.Width(130));
+            GUILayout.Label($"⭐ Puntos: {NeveriaGameManager.Instance.PuntajeTotal}", estiloPuntaje, GUILayout.Width(120));
+
+            // Botón de Pausa en barra superior
+            if (GUILayout.Button("⏸️ PAUSA [ESC]", estiloBotonAccion, GUILayout.Width(130), GUILayout.Height(28)))
+            {
+                AlternarPausa();
+            }
 
             GUILayout.EndHorizontal();
             GUILayout.EndArea();
@@ -716,6 +775,10 @@ namespace CaminosDeGuanajuato.Nieves
         {
             Rect r = GUILayoutUtility.GetRect(ancho, alto, GUILayout.Width(ancho), GUILayout.Height(alto));
             bool clicked = GUI.Button(r, "", estilo);
+            if (clicked && AudioColonialManager.Instance != null)
+            {
+                AudioColonialManager.Instance.ReproducirClickBoton();
+            }
 
             if (icono != null)
             {
@@ -832,6 +895,157 @@ namespace CaminosDeGuanajuato.Nieves
             if (BotonConIcono("🗺️ MAPA GENERAL", null, estiloBotonAccion, 180, 42))
             {
                 IrAlOverworld();
+            }
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+
+            GUILayout.EndArea();
+        }
+
+        public void AlternarPausa()
+        {
+            estaPausado = !estaPausado;
+            Time.timeScale = estaPausado ? 0f : 1f;
+            if (AudioColonialManager.Instance != null)
+            {
+                AudioColonialManager.Instance.ReproducirClickBoton();
+            }
+        }
+
+        private void DibujarMenuPausa()
+        {
+            GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), texOverlay);
+
+            float ancho = 460;
+            float alto = 380;
+            float x = (Screen.width - ancho) * 0.5f;
+            float y = (Screen.height - alto) * 0.5f;
+
+            GUILayout.BeginArea(new Rect(x, y, ancho, alto), estiloCajaOscura);
+            GUILayout.Space(14);
+            GUILayout.Label("⏸️ JUEGO EN PAUSA", estiloTitulo);
+            GUILayout.Label("Nivel 2: Desafío de las Nieves de Dolores", estiloSubtitulo);
+            GUILayout.Space(14);
+
+            GUILayout.BeginVertical();
+
+            if (BotonConIcono("▶️ CONTINUAR [ESC]", null, estiloBotonServir, 420, 42))
+            {
+                AlternarPausa();
+            }
+
+            GUILayout.Space(8);
+
+            if (BotonConIcono("⚙ OPCIONES DE AUDIO / PANTALLA", null, estiloBotonAccion, 420, 42))
+            {
+                mostrarOpcionesPausa = true;
+            }
+
+            GUILayout.Space(8);
+
+            if (BotonConIcono("🔄 REINICIAR JORNADA", null, estiloBotonAccion, 420, 42))
+            {
+                ReiniciarNivel();
+            }
+
+            GUILayout.Space(8);
+
+            if (BotonConIcono("🗺️ MAPA GENERAL (OVERWORLD)", null, estiloBotonAccion, 420, 42))
+            {
+                IrAlOverworld();
+            }
+
+            GUILayout.Space(8);
+
+            if (BotonConIcono("🏠 MENÚ PRINCIPAL", null, estiloBotonAccion, 420, 42))
+            {
+                IrAlMenu();
+            }
+
+            GUILayout.EndVertical();
+            GUILayout.EndArea();
+        }
+
+        private void DibujarModalOpcionesPausa()
+        {
+            GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), texOverlay);
+
+            float ancho = 480;
+            float alto = 340;
+            float x = (Screen.width - ancho) * 0.5f;
+            float y = (Screen.height - alto) * 0.5f;
+
+            GUILayout.BeginArea(new Rect(x, y, ancho, alto), estiloCajaOscura);
+            GUILayout.Space(14);
+            GUILayout.Label("⚙ OPCIONES DE JUEGO", estiloTitulo);
+            GUILayout.Label("Ajustes de audio y visualización", estiloSubtitulo);
+            GUILayout.Space(14);
+
+            // Slider Volumen General
+            GUILayout.BeginHorizontal();
+            GUILayout.Label($"Volumen General: {Mathf.RoundToInt(volumenGeneral * 100)}%", estiloTextoBlanco, GUILayout.Width(180));
+            float nuevoGen = GUILayout.HorizontalSlider(volumenGeneral, 0f, 1f);
+            if (Mathf.Abs(nuevoGen - volumenGeneral) > 0.001f)
+            {
+                volumenGeneral = nuevoGen;
+                AudioListener.volume = volumenGeneral;
+                if (AudioColonialManager.Instance != null)
+                {
+                    AudioColonialManager.Instance.AjustarVolumenGeneral(volumenGeneral);
+                }
+            }
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(8);
+
+            // Slider Música
+            GUILayout.BeginHorizontal();
+            GUILayout.Label($"Música Tradicional: {Mathf.RoundToInt(volumenMusica * 100)}%", estiloTextoBlanco, GUILayout.Width(180));
+            float nuevaMus = GUILayout.HorizontalSlider(volumenMusica, 0f, 1f);
+            if (Mathf.Abs(nuevaMus - volumenMusica) > 0.001f)
+            {
+                volumenMusica = nuevaMus;
+                if (AudioColonialManager.Instance != null)
+                {
+                    AudioColonialManager.Instance.AjustarVolumenMusica(volumenMusica);
+                }
+            }
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(8);
+
+            // Slider SFX
+            GUILayout.BeginHorizontal();
+            GUILayout.Label($"Efectos de Sonido: {Mathf.RoundToInt(volumenSFX * 100)}%", estiloTextoBlanco, GUILayout.Width(180));
+            float nuevoSFX = GUILayout.HorizontalSlider(volumenSFX, 0f, 1f);
+            if (Mathf.Abs(nuevoSFX - volumenSFX) > 0.001f)
+            {
+                volumenSFX = nuevoSFX;
+                if (AudioColonialManager.Instance != null)
+                {
+                    AudioColonialManager.Instance.AjustarVolumenSFX(volumenSFX);
+                }
+            }
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(10);
+
+            // Toggle Pantalla Completa
+            bool nuevaPantalla = GUILayout.Toggle(pantallaCompleta, " Pantalla Completa (Full Screen)", estiloTextoBlanco);
+            if (nuevaPantalla != pantallaCompleta)
+            {
+                pantallaCompleta = nuevaPantalla;
+                Screen.fullScreen = pantallaCompleta;
+            }
+
+            GUILayout.Space(18);
+
+            // Botón Volver
+            GUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            if (BotonConIcono("GUARDAR Y VOLVER", null, estiloBotonServir, 220, 40))
+            {
+                mostrarOpcionesPausa = false;
             }
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();

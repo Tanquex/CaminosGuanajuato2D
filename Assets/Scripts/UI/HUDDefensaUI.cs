@@ -30,6 +30,16 @@ namespace CaminosDeGuanajuato.UI
         private float alertaInvasionTiempo = 0f;
         private GuanajichoController player;
 
+        // Estado de Pausa y Opciones
+        private bool estaPausado = false;
+        private bool mostrarOpcionesPausa = false;
+        private bool sonidoDerrotaReproducido = false;
+
+        private float volumenGeneral = 0.85f;
+        private float volumenMusica = 0.65f;
+        private float volumenSFX = 0.85f;
+        private bool pantallaCompleta = true;
+
         private void OnEnable()
         {
             OleadasSpawner.OnAvisoInvasion += ManejarAvisoInvasion;
@@ -75,6 +85,14 @@ namespace CaminosDeGuanajuato.UI
             CrearTexturas();
             tiempoTranscurridoBanner = 0f;
             Time.timeScale = 1f; // Asegurar tiempo normal al cargar
+            pantallaCompleta = Screen.fullScreen;
+
+            if (AudioColonialManager.Instance != null)
+            {
+                volumenGeneral = AudioColonialManager.Instance.VolumenGeneral;
+                volumenMusica = AudioColonialManager.Instance.VolumenMusica;
+                volumenSFX = AudioColonialManager.Instance.VolumenSFX;
+            }
         }
 
         private void Update()
@@ -87,6 +105,27 @@ namespace CaminosDeGuanajuato.UI
             if (Input.GetKeyDown(KeyCode.H))
             {
                 mostrarGuiaControles = !mostrarGuiaControles;
+                if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
+            }
+
+            bool estaDerrotado = AntorchaLibertaria.Instance != null && AntorchaLibertaria.Instance.EstaExtinguida;
+            bool estaVictoria = OleadasSpawner.Instance != null && OleadasSpawner.Instance.TodasOleadasCompletadas;
+
+            // Atajo de Pausa / Escape
+            if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.P))
+            {
+                if (!estaDerrotado && !estaVictoria)
+                {
+                    if (mostrarOpcionesPausa)
+                    {
+                        mostrarOpcionesPausa = false;
+                        if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
+                    }
+                    else
+                    {
+                        AlternarPausa();
+                    }
+                }
             }
 
             if (tiempoTranscurridoBanner < duracionBannerInicio && !bannerCerradoManualmente)
@@ -204,9 +243,17 @@ namespace CaminosDeGuanajuato.UI
             bool estaDerrotado = AntorchaLibertaria.Instance != null && AntorchaLibertaria.Instance.EstaExtinguida;
             bool estaVictoria = OleadasSpawner.Instance != null && OleadasSpawner.Instance.TodasOleadasCompletadas;
 
-            // 1. Si ocurrio derrota o victoria, renderizar modal y detener HUD interactivo
+            // 1. Si ocurrió derrota o victoria, renderizar modal y detener HUD interactivo
             if (estaDerrotado)
             {
+                if (!sonidoDerrotaReproducido)
+                {
+                    sonidoDerrotaReproducido = true;
+                    if (AudioColonialManager.Instance != null)
+                    {
+                        AudioColonialManager.Instance.ReproducirDerrota();
+                    }
+                }
                 DibujarPantallaDerrota();
                 return;
             }
@@ -217,7 +264,27 @@ namespace CaminosDeGuanajuato.UI
                 return;
             }
 
-            // 2. Banner de Inicio de Nivel 1 (durante los primeros segundos)
+            // 2. Si el juego está en pausa, dibujar menú de pausa u opciones
+            if (estaPausado)
+            {
+                if (mostrarOpcionesPausa)
+                {
+                    DibujarModalOpcionesPausa();
+                }
+                else
+                {
+                    DibujarMenuPausa();
+                }
+                return;
+            }
+
+            // Botón de Pausa en la esquina superior derecha
+            if (GUI.Button(new Rect(Screen.width - 150, 15, 135, 34), "⏸️ PAUSA [ESC]", estiloBoton))
+            {
+                AlternarPausa();
+            }
+
+            // 3. Banner de Inicio de Nivel 1 (durante los primeros segundos)
             if (tiempoTranscurridoBanner < duracionBannerInicio && !bannerCerradoManualmente)
             {
                 DibujarBannerInicio();
@@ -448,11 +515,13 @@ namespace CaminosDeGuanajuato.UI
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("🔄 REINICIAR", estiloBotonReinicio, GUILayout.Width(190), GUILayout.Height(44)))
             {
+                if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
                 ReiniciarNivel();
             }
             GUILayout.Space(12);
             if (GUILayout.Button("🏠 MENÚ PRINCIPAL", estiloBotonReinicio, GUILayout.Width(190), GUILayout.Height(44)))
             {
+                if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
                 IrAlMenuPrincipal();
             }
             GUILayout.FlexibleSpace();
@@ -498,17 +567,176 @@ namespace CaminosDeGuanajuato.UI
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("🔄 REPETIR", estiloBotonReinicio, GUILayout.Width(130), GUILayout.Height(42)))
             {
+                if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
                 ReiniciarNivel();
             }
             GUILayout.Space(8);
             if (GUILayout.Button("🗺️ MAPA / MISIONES", estiloBotonReinicio, GUILayout.Width(200), GUILayout.Height(42)))
             {
+                if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
                 IrAlOverworld();
             }
             GUILayout.Space(8);
             if (GUILayout.Button("🏠 MENÚ", estiloBotonReinicio, GUILayout.Width(130), GUILayout.Height(42)))
             {
+                if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
                 IrAlMenuPrincipal();
+            }
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+
+            GUILayout.EndArea();
+        }
+
+        public void AlternarPausa()
+        {
+            estaPausado = !estaPausado;
+            Time.timeScale = estaPausado ? 0f : 1f;
+            if (AudioColonialManager.Instance != null)
+            {
+                AudioColonialManager.Instance.ReproducirClickBoton();
+            }
+        }
+
+        private void DibujarMenuPausa()
+        {
+            GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), texturaFondoOverlay);
+
+            float ancho = 460;
+            float alto = 380;
+            float x = (Screen.width - ancho) * 0.5f;
+            float y = (Screen.height - alto) * 0.5f;
+
+            GUILayout.BeginArea(new Rect(x, y, ancho, alto), estiloCajaOscura);
+            GUILayout.Space(14);
+            GUILayout.Label("⏸️ JUEGO EN PAUSA", estiloTituloBanner);
+            GUILayout.Label("Nivel 1: Defensa del Atrio Parroquial", estiloNivelBanner);
+            GUILayout.Space(14);
+
+            GUILayout.BeginVertical();
+
+            if (GUILayout.Button("▶️ CONTINUAR [ESC]", estiloBotonReinicio, GUILayout.Height(42)))
+            {
+                AlternarPausa();
+            }
+
+            GUILayout.Space(8);
+
+            if (GUILayout.Button("⚙ OPCIONES DE AUDIO / PANTALLA", estiloBotonReinicio, GUILayout.Height(42)))
+            {
+                if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
+                mostrarOpcionesPausa = true;
+            }
+
+            GUILayout.Space(8);
+
+            if (GUILayout.Button("🔄 REINICIAR NIVEL", estiloBotonReinicio, GUILayout.Height(42)))
+            {
+                if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
+                ReiniciarNivel();
+            }
+
+            GUILayout.Space(8);
+
+            if (GUILayout.Button("🗺️ MAPA GENERAL (OVERWORLD)", estiloBotonReinicio, GUILayout.Height(42)))
+            {
+                if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
+                IrAlOverworld();
+            }
+
+            GUILayout.Space(8);
+
+            if (GUILayout.Button("🏠 MENÚ PRINCIPAL", estiloBotonReinicio, GUILayout.Height(42)))
+            {
+                if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
+                IrAlMenuPrincipal();
+            }
+
+            GUILayout.EndVertical();
+            GUILayout.EndArea();
+        }
+
+        private void DibujarModalOpcionesPausa()
+        {
+            GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), texturaFondoOverlay);
+
+            float ancho = 480;
+            float alto = 340;
+            float x = (Screen.width - ancho) * 0.5f;
+            float y = (Screen.height - alto) * 0.5f;
+
+            GUILayout.BeginArea(new Rect(x, y, ancho, alto), estiloCajaOscura);
+            GUILayout.Space(14);
+            GUILayout.Label("⚙ OPCIONES DE JUEGO", estiloTituloBanner);
+            GUILayout.Label("Ajustes de audio y visualización", estiloSubtituloHUD);
+            GUILayout.Space(14);
+
+            // Slider Volumen General
+            GUILayout.BeginHorizontal();
+            GUILayout.Label($"Volumen General: {Mathf.RoundToInt(volumenGeneral * 100)}%", estiloTextoBanner, GUILayout.Width(180));
+            float nuevoGen = GUILayout.HorizontalSlider(volumenGeneral, 0f, 1f);
+            if (Mathf.Abs(nuevoGen - volumenGeneral) > 0.001f)
+            {
+                volumenGeneral = nuevoGen;
+                AudioListener.volume = volumenGeneral;
+                if (AudioColonialManager.Instance != null)
+                {
+                    AudioColonialManager.Instance.AjustarVolumenGeneral(volumenGeneral);
+                }
+            }
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(8);
+
+            // Slider Música
+            GUILayout.BeginHorizontal();
+            GUILayout.Label($"Música Tradicional: {Mathf.RoundToInt(volumenMusica * 100)}%", estiloTextoBanner, GUILayout.Width(180));
+            float nuevaMus = GUILayout.HorizontalSlider(volumenMusica, 0f, 1f);
+            if (Mathf.Abs(nuevaMus - volumenMusica) > 0.001f)
+            {
+                volumenMusica = nuevaMus;
+                if (AudioColonialManager.Instance != null)
+                {
+                    AudioColonialManager.Instance.AjustarVolumenMusica(volumenMusica);
+                }
+            }
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(8);
+
+            // Slider SFX
+            GUILayout.BeginHorizontal();
+            GUILayout.Label($"Efectos de Sonido: {Mathf.RoundToInt(volumenSFX * 100)}%", estiloTextoBanner, GUILayout.Width(180));
+            float nuevoSFX = GUILayout.HorizontalSlider(volumenSFX, 0f, 1f);
+            if (Mathf.Abs(nuevoSFX - volumenSFX) > 0.001f)
+            {
+                volumenSFX = nuevoSFX;
+                if (AudioColonialManager.Instance != null)
+                {
+                    AudioColonialManager.Instance.AjustarVolumenSFX(volumenSFX);
+                }
+            }
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(10);
+
+            // Toggle Pantalla Completa
+            bool nuevaPantalla = GUILayout.Toggle(pantallaCompleta, " Pantalla Completa (Full Screen)", estiloTextoBanner);
+            if (nuevaPantalla != pantallaCompleta)
+            {
+                pantallaCompleta = nuevaPantalla;
+                Screen.fullScreen = pantallaCompleta;
+            }
+
+            GUILayout.Space(18);
+
+            // Botón Volver
+            GUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("GUARDAR Y VOLVER", estiloBotonReinicio, GUILayout.Width(220), GUILayout.Height(40)))
+            {
+                if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
+                mostrarOpcionesPausa = false;
             }
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();

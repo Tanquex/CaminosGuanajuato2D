@@ -59,6 +59,12 @@ namespace CaminosDeGuanajuato.Core
         private AudioClip proceduralRasparHielo;
         private AudioClip proceduralPedidoCompletado;
         private AudioClip proceduralErrorPedido;
+        private AudioClip proceduralDerrota;
+        private AudioClip proceduralClickBoton;
+
+        public float VolumenGeneral => volumenGeneral;
+        public float VolumenMusica => volumenMusica;
+        public float VolumenSFX => volumenSFX;
 
         private void Awake()
         {
@@ -116,6 +122,8 @@ namespace CaminosDeGuanajuato.Core
             proceduralRasparHielo = CrearClipRasparHielo();
             proceduralPedidoCompletado = CrearClipPedidoCompletado();
             proceduralErrorPedido = CrearClipErrorPedido();
+            proceduralDerrota = CrearClipDerrota();
+            proceduralClickBoton = CrearClipClickBoton();
         }
 
         public void ReproducirDisparoHonda()
@@ -202,6 +210,24 @@ namespace CaminosDeGuanajuato.Core
             {
                 audioSourceSFX.pitch = 1.0f;
                 audioSourceSFX.PlayOneShot(proceduralErrorPedido, volumenSFX * volumenGeneral * 0.85f);
+            }
+        }
+
+        public void ReproducirDerrota()
+        {
+            if (proceduralDerrota != null)
+            {
+                audioSourceSFX.pitch = 1.0f;
+                audioSourceSFX.PlayOneShot(proceduralDerrota, volumenSFX * volumenGeneral * 1.0f);
+            }
+        }
+
+        public void ReproducirClickBoton()
+        {
+            if (proceduralClickBoton != null)
+            {
+                audioSourceSFX.pitch = Random.Range(0.96f, 1.04f);
+                audioSourceSFX.PlayOneShot(proceduralClickBoton, volumenSFX * volumenGeneral * 0.75f);
             }
         }
 
@@ -531,6 +557,68 @@ namespace CaminosDeGuanajuato.Core
             }
 
             AudioClip clip = AudioClip.Create("SFX_ErrorPedido", numSamples, 1, sampleRate, false);
+            clip.SetData(samples, 0);
+            return clip;
+        }
+
+        private AudioClip CrearClipDerrota()
+        {
+            int sampleRate = 44100;
+            float duracion = 1.4f;
+            int numSamples = (int)(sampleRate * duracion);
+            float[] samples = new float[numSamples];
+
+            // Melodía descendente solemne / fúnebre colonial (E4 -> C4 -> A3 -> F3 con tañido grave)
+            float[] frecuencias = { 329.63f, 261.63f, 220.00f, 174.61f };
+            float tiempoNota = 0.28f;
+
+            for (int i = 0; i < numSamples; i++)
+            {
+                float t = (float)i / sampleRate;
+                float sample = 0f;
+
+                int indiceNota = Mathf.Min((int)(t / tiempoNota), frecuencias.Length - 1);
+                float fNota = frecuencias[indiceNota];
+                float tNota = t - (indiceNota * tiempoNota);
+                float envNota = Mathf.Exp(-tNota * 5.0f);
+
+                // Onda principal con armónico para timbre metálico colonial
+                sample += Mathf.Sin(2f * Mathf.PI * fNota * t) * envNota * 0.5f;
+                sample += Mathf.Sin(4f * Mathf.PI * fNota * t) * envNota * 0.2f;
+
+                // Campana grave de fondo fúnebre durante todo el stinger
+                float envGong = Mathf.Exp(-t * 2.2f);
+                sample += Mathf.Sin(2f * Mathf.PI * 110f * t) * envGong * 0.35f;
+                sample += Mathf.Sin(2f * Mathf.PI * 164.81f * t) * envGong * 0.2f;
+
+                samples[i] = Mathf.Clamp(sample, -1f, 1f);
+            }
+
+            AudioClip clip = AudioClip.Create("SFX_MisionFallida", numSamples, 1, sampleRate, false);
+            clip.SetData(samples, 0);
+            return clip;
+        }
+
+        private AudioClip CrearClipClickBoton()
+        {
+            int sampleRate = 44100;
+            float duracion = 0.045f;
+            int numSamples = (int)(sampleRate * duracion);
+            float[] samples = new float[numSamples];
+
+            // Clic cerámico / madera táctil para botones de UI colonial
+            for (int i = 0; i < numSamples; i++)
+            {
+                float t = (float)i / sampleRate;
+                float env = Mathf.Exp(-t * 110f); // Caída rápida en ~20ms
+                float freq = Mathf.Lerp(1200f, 280f, (float)i / numSamples);
+                float chasquido = Mathf.Sin(2f * Mathf.PI * freq * t);
+                float ruido = (Random.value * 2f - 1f) * Mathf.Exp(-t * 220f) * 0.3f;
+
+                samples[i] = (chasquido + ruido) * env * 0.7f;
+            }
+
+            AudioClip clip = AudioClip.Create("SFX_ClickBoton", numSamples, 1, sampleRate, false);
             clip.SetData(samples, 0);
             return clip;
         }

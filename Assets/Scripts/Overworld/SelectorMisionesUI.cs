@@ -202,6 +202,7 @@ namespace CaminosDeGuanajuato.Overworld
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("⬅ VOLVER AL MAPA GENERAL", estiloBotonCerrar, GUILayout.Width(240), GUILayout.Height(38)))
             {
+                if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
                 Cerrar();
             }
             GUILayout.FlexibleSpace();
@@ -251,6 +252,7 @@ namespace CaminosDeGuanajuato.Overworld
             {
                 if (GUILayout.Button("⭐ REPETIR MISIÓN", estiloBotonCompletado, GUILayout.Height(42)))
                 {
+                    if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
                     onJugar?.Invoke();
                 }
             }
@@ -258,6 +260,7 @@ namespace CaminosDeGuanajuato.Overworld
             {
                 if (GUILayout.Button("▶ ¡JUGAR AHORA!", estiloBotonJugar, GUILayout.Height(42)))
                 {
+                    if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
                     onJugar?.Invoke();
                 }
             }

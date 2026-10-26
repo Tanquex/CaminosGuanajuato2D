@@ -438,6 +438,10 @@ namespace CaminosDeGuanajuato.Nieves
         {
             estadoJuego = EstadoJuegoNeveria.Derrota;
             Debug.Log("<color=red>[Nevería]</color> 💀 Jornada fallida. Demasiados comensales decepcionados.");
+            if (AudioColonialManager.Instance != null)
+            {
+                AudioColonialManager.Instance.ReproducirDerrota();
+            }
             OnEstadoCambiado?.Invoke();
         }
     }

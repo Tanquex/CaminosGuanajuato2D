@@ -266,7 +266,12 @@ namespace CaminosDeGuanajuato.UI
             bool estaEncima = rect.Contains(Event.current.mousePosition);
             GUIStyle estilo = estaEncima ? estiloBotonMenuHover : estiloBotonMenu;
 
-            return GUI.Button(rect, texto, estilo);
+            bool presionado = GUI.Button(rect, texto, estilo);
+            if (presionado && AudioColonialManager.Instance != null)
+            {
+                AudioColonialManager.Instance.ReproducirClickBoton();
+            }
+            return presionado;
         }
 
         private void DibujarModalOpciones()
@@ -348,6 +353,7 @@ namespace CaminosDeGuanajuato.UI
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("GUARDAR Y VOLVER", estiloBotonModal, GUILayout.Width(200), GUILayout.Height(36)))
             {
+                if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
                 mostrarOpciones = false;
             }
             GUILayout.FlexibleSpace();
@@ -382,6 +388,7 @@ namespace CaminosDeGuanajuato.UI
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("VOLVER AL MENÚ", estiloBotonModal, GUILayout.Width(190), GUILayout.Height(36)))
             {
+                if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
                 mostrarCreditos = false;
             }
             GUILayout.FlexibleSpace();
