@@ -47,6 +47,11 @@ namespace CaminosDeGuanajuato.UI
         private Texture2D texturaFondoBotonHover;
         private Texture2D texturaOverlay;
 
+        private void Awake()
+        {
+            CrearTexturasGUI();
+        }
+
         private void Start()
         {
             Time.timeScale = 1f;
@@ -109,6 +114,8 @@ namespace CaminosDeGuanajuato.UI
 
         private void CrearTexturasGUI()
         {
+            if (texturaFondoModal != null) return;
+
             texturaFondoModal = new Texture2D(1, 1);
             texturaFondoModal.SetPixel(0, 0, new Color(0.12f, 0.08f, 0.05f, 0.96f)); // Madera y terracota colonial
             texturaFondoModal.Apply();
@@ -128,6 +135,7 @@ namespace CaminosDeGuanajuato.UI
 
         private void InicializarEstilos()
         {
+            CrearTexturasGUI();
             if (estiloBotonMenu != null) return;
 
             estiloBotonMenu = new GUIStyle(GUI.skin.button);

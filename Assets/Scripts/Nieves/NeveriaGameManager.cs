@@ -203,13 +203,17 @@ namespace CaminosDeGuanajuato.Nieves
         {
             string nombreSinExt = System.IO.Path.GetFileNameWithoutExtension(rutaRelativa);
 
-            // 1. Intentar cargar desde Resources (100% compatible con WebGL / itch.io)
-            Sprite resSprite = Resources.Load<Sprite>(nombreSinExt);
-            if (resSprite != null) return resSprite;
-
+            // 1. Obtener la textura desde Resources para recortar con precisión el primer frame (evita mostrar el spritesheet completo)
             Texture2D resTex = Resources.Load<Texture2D>(nombreSinExt);
+            if (resTex == null)
+            {
+                Sprite resSprite = Resources.Load<Sprite>(nombreSinExt);
+                if (resSprite != null) resTex = resSprite.texture;
+            }
+
             if (resTex != null)
             {
+                resTex.filterMode = FilterMode.Point;
                 int ancho = Mathf.Min(wFrame, resTex.width);
                 int alto = Mathf.Min(hFrame, resTex.height);
                 return Sprite.Create(resTex, new Rect(0, resTex.height - alto, ancho, alto), new Vector2(0.5f, 0f), ppu);

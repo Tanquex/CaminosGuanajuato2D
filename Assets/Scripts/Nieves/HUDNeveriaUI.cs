@@ -91,6 +91,11 @@ namespace CaminosDeGuanajuato.Nieves
             };
         }
 
+        private void Awake()
+        {
+            CrearTexturas();
+        }
+
         private void Start()
         {
             CrearTexturas();
@@ -521,10 +526,10 @@ namespace CaminosDeGuanajuato.Nieves
 
             // Barra de paciencia fluida
             Rect rBarra = GUILayoutUtility.GetRect(ancho - 16, 9);
-            GUI.DrawTexture(rBarra, texBarraFondo);
+            if (texBarraFondo != null) GUI.DrawTexture(rBarra, texBarraFondo);
             float pct = cliente.PorcentajePaciencia;
             Texture2D texColor = (pct > 0.5f) ? texBarraVerde : (pct > 0.25f ? texBarraAmarilla : texBarraRoja);
-            GUI.DrawTexture(new Rect(rBarra.x, rBarra.y, rBarra.width * pct, rBarra.height), texColor);
+            if (texColor != null) GUI.DrawTexture(new Rect(rBarra.x, rBarra.y, rBarra.width * pct, rBarra.height), texColor);
 
             GUILayout.EndArea();
         }
@@ -660,8 +665,8 @@ namespace CaminosDeGuanajuato.Nieves
                 GUILayout.Space(3);
 
                 Rect rBarraRaspado = GUILayoutUtility.GetRect(500, 12);
-                GUI.DrawTexture(rBarraRaspado, texBarraFondo);
-                GUI.DrawTexture(new Rect(rBarraRaspado.x, rBarraRaspado.y, rBarraRaspado.width * pctHielo, rBarraRaspado.height), texBarraVerde);
+                if (texBarraFondo != null) GUI.DrawTexture(rBarraRaspado, texBarraFondo);
+                if (texBarraVerde != null) GUI.DrawTexture(new Rect(rBarraRaspado.x, rBarraRaspado.y, rBarraRaspado.width * pctHielo, rBarraRaspado.height), texBarraVerde);
 
                 GUILayout.EndVertical();
 
@@ -845,7 +850,7 @@ namespace CaminosDeGuanajuato.Nieves
 
         private void DibujarModalVictoria()
         {
-            GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), texOverlay);
+            if (texOverlay != null) GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), texOverlay);
 
             float w = 580;
             float h = 300;
@@ -886,7 +891,7 @@ namespace CaminosDeGuanajuato.Nieves
 
         private void DibujarModalDerrota()
         {
-            GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), texOverlay);
+            if (texOverlay != null) GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), texOverlay);
 
             float w = 520;
             float h = 260;
@@ -931,7 +936,7 @@ namespace CaminosDeGuanajuato.Nieves
 
         private void DibujarMenuPausa()
         {
-            GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), texOverlay);
+            if (texOverlay != null) GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), texOverlay);
 
             float ancho = 460;
             float alto = 380;
@@ -985,7 +990,7 @@ namespace CaminosDeGuanajuato.Nieves
 
         private void DibujarModalOpcionesPausa()
         {
-            GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), texOverlay);
+            if (texOverlay != null) GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), texOverlay);
 
             float ancho = 480;
             float alto = 340;

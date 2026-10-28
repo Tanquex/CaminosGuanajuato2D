@@ -80,6 +80,11 @@ namespace CaminosDeGuanajuato.UI
         private Texture2D texturaBarraVerde;
         private Texture2D texturaBarraRoja;
 
+        private void Awake()
+        {
+            CrearTexturas();
+        }
+
         private void Start()
         {
             CrearTexturas();
@@ -140,6 +145,8 @@ namespace CaminosDeGuanajuato.UI
 
         private void CrearTexturas()
         {
+            if (texturaFondoColonial != null) return;
+
             texturaFondoColonial = new Texture2D(1, 1);
             texturaFondoColonial.SetPixel(0, 0, new Color(0.12f, 0.08f, 0.05f, 0.92f));
             texturaFondoColonial.Apply();
@@ -167,6 +174,7 @@ namespace CaminosDeGuanajuato.UI
 
         private void InicializarEstilos()
         {
+            CrearTexturas();
             if (estiloTituloHUD != null) return;
 
             estiloCajaOscura = new GUIStyle(GUI.skin.box);
@@ -496,7 +504,7 @@ namespace CaminosDeGuanajuato.UI
         private void DibujarPantallaDerrota()
         {
             // Fondo oscuro de pantalla completa
-            GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), texturaFondoOverlay);
+            if (texturaFondoOverlay != null) GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), texturaFondoOverlay);
 
             float ancho = 520;
             float alto = 260;
@@ -548,7 +556,7 @@ namespace CaminosDeGuanajuato.UI
                 }
             }
 
-            GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), texturaFondoOverlay);
+            if (texturaFondoOverlay != null) GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), texturaFondoOverlay);
 
             float ancho = 560;
             float alto = 270;
@@ -765,9 +773,12 @@ namespace CaminosDeGuanajuato.UI
         private void DibujarBarraProgreso(float porcentaje)
         {
             Rect rectBarra = GUILayoutUtility.GetRect(180, 14);
-            GUI.DrawTexture(rectBarra, texturaBarraRoja);
-            Rect rectVerde = new Rect(rectBarra.x, rectBarra.y, rectBarra.width * Mathf.Clamp01(porcentaje), rectBarra.height);
-            GUI.DrawTexture(rectVerde, texturaBarraVerde);
+            if (texturaBarraRoja != null) GUI.DrawTexture(rectBarra, texturaBarraRoja);
+            if (texturaBarraVerde != null)
+            {
+                Rect rectVerde = new Rect(rectBarra.x, rectBarra.y, rectBarra.width * Mathf.Clamp01(porcentaje), rectBarra.height);
+                GUI.DrawTexture(rectVerde, texturaBarraVerde);
+            }
         }
     }
 }

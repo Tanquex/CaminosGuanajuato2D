@@ -73,8 +73,8 @@ namespace CaminosDeGuanajuato.Overworld
 
         private void InicializarEstilos()
         {
-            if (estiloTitulo != null) return;
             CrearTexturas();
+            if (estiloTitulo != null) return;
 
             estiloModal = new GUIStyle(GUI.skin.box);
             estiloModal.normal.background = texFondoModal;
