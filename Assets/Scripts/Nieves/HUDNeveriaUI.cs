@@ -128,6 +128,23 @@ namespace CaminosDeGuanajuato.Nieves
 
         private Texture2D CargarTexturaAsset(string rutaRelativa)
         {
+            string nombreSinExt = System.IO.Path.GetFileNameWithoutExtension(rutaRelativa);
+
+            // 1. Cargar desde Resources (100% compatible con WebGL / itch.io)
+            Texture2D resTex = Resources.Load<Texture2D>(nombreSinExt);
+            if (resTex != null)
+            {
+                resTex.filterMode = FilterMode.Point;
+                return resTex;
+            }
+
+            Sprite resSprite = Resources.Load<Sprite>(nombreSinExt);
+            if (resSprite != null && resSprite.texture != null)
+            {
+                return resSprite.texture;
+            }
+
+            // 2. Fallback de desarrollo para Editor / PC
             try
             {
                 string ruta = System.IO.Path.Combine(Application.dataPath, rutaRelativa);

@@ -310,6 +310,13 @@ namespace CaminosDeGuanajuato.Core
 
         private AudioClip CargarClipWavDesdeDisco(string rutaRelativa)
         {
+            string nombreSinExt = System.IO.Path.GetFileNameWithoutExtension(rutaRelativa);
+
+            // 1. Cargar desde Resources (100% compatible con WebGL / itch.io)
+            AudioClip resClip = Resources.Load<AudioClip>(nombreSinExt);
+            if (resClip != null) return resClip;
+
+            // 2. Fallback por lectura binaria en disco para Editor / PC
             try
             {
                 string path = System.IO.Path.Combine(Application.dataPath, rutaRelativa);

@@ -97,6 +97,19 @@ namespace CaminosDeGuanajuato.Overworld
 
         public static Sprite CargarSpriteDesdeAssets(string rutaRelativa, float ppu = 64f)
         {
+            string nombreSinExt = System.IO.Path.GetFileNameWithoutExtension(rutaRelativa);
+
+            // 1. Intentar cargar desde Resources (100% compatible con WebGL / itch.io)
+            Sprite resSprite = Resources.Load<Sprite>(nombreSinExt);
+            if (resSprite != null) return resSprite;
+
+            Texture2D resTex = Resources.Load<Texture2D>(nombreSinExt);
+            if (resTex != null)
+            {
+                return Sprite.Create(resTex, new Rect(0, 0, resTex.width, resTex.height), new Vector2(0.5f, 0.5f), ppu);
+            }
+
+            // 2. Fallback de desarrollo con Application.dataPath en Editor / PC
             try
             {
                 string ruta = System.IO.Path.Combine(Application.dataPath, rutaRelativa);
@@ -186,15 +199,29 @@ namespace CaminosDeGuanajuato.Overworld
             texBarraRelleno.SetPixel(0, 0, new Color(0.98f, 0.75f, 0.18f, 1f)); // Dorado
             texBarraRelleno.Apply();
 
-            // Cargar imagen de mapa para renderizado directo en OnGUI
+            // Cargar imagen de mapa para renderizado directo en OnGUI (compatible con WebGL)
             if (texFondoMapa == null)
             {
-                string ruta = System.IO.Path.Combine(Application.dataPath, "Sprites/Overworld_Mapa_Guanajuato.jpg");
-                if (System.IO.File.Exists(ruta))
+                texFondoMapa = Resources.Load<Texture2D>("Overworld_Mapa_Guanajuato");
+                if (texFondoMapa == null)
                 {
-                    byte[] data = System.IO.File.ReadAllBytes(ruta);
-                    texFondoMapa = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-                    texFondoMapa.LoadImage(data);
+                    Sprite sp = Resources.Load<Sprite>("Overworld_Mapa_Guanajuato");
+                    if (sp != null) texFondoMapa = sp.texture;
+                }
+
+                if (texFondoMapa == null)
+                {
+                    try
+                    {
+                        string ruta = System.IO.Path.Combine(Application.dataPath, "Sprites/Overworld_Mapa_Guanajuato.jpg");
+                        if (System.IO.File.Exists(ruta))
+                        {
+                            byte[] data = System.IO.File.ReadAllBytes(ruta);
+                            texFondoMapa = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+                            texFondoMapa.LoadImage(data);
+                        }
+                    }
+                    catch { }
                 }
             }
         }

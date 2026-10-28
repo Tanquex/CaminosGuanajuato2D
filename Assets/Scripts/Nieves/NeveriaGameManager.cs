@@ -130,7 +130,8 @@ namespace CaminosDeGuanajuato.Nieves
                 srG.sortingOrder = 5;
 
                 // Intentar cargar sprite de HeroKnight
-                Sprite spriteGuanajicho = CargarPrimerFrameSprite("Hero Knight - Pixel Art/Sprites/HeroKnight.png", 100, 55, 64f);
+                Sprite spriteGuanajicho = CargarPrimerFrameSprite("HeroKnight", 100, 55, 64f);
+                if (spriteGuanajicho == null) spriteGuanajicho = CargarPrimerFrameSprite("Hero Knight - Pixel Art/Sprites/HeroKnight.png", 100, 55, 64f);
                 if (spriteGuanajicho != null)
                 {
                     srG.sprite = spriteGuanajicho;
@@ -147,7 +148,8 @@ namespace CaminosDeGuanajuato.Nieves
                 SpriteRenderer srDC = goDonChon.AddComponent<SpriteRenderer>();
                 srDC.sortingOrder = 7;
 
-                Sprite spriteDonChon = CargarPrimerFrameSprite("Pixel Adventure 1/Assets/Main Characters/Mask Dude/Idle (32x32).png", 32, 32, 32f);
+                Sprite spriteDonChon = CargarPrimerFrameSprite("Comensal_MaskDude", 32, 32, 32f);
+                if (spriteDonChon == null) spriteDonChon = CargarPrimerFrameSprite("Pixel Adventure 1/Assets/Main Characters/Mask Dude/Idle (32x32).png", 32, 32, 32f);
                 if (spriteDonChon != null)
                 {
                     srDC.sprite = spriteDonChon;
@@ -159,26 +161,61 @@ namespace CaminosDeGuanajuato.Nieves
         {
             spritesComensales.Clear();
 
-            string[] rutas = new string[]
+            string[] nombresResources = new string[]
             {
-                "Pixel Adventure 1/Assets/Main Characters/Pink Man/Idle (32x32).png",
-                "Pixel Adventure 1/Assets/Main Characters/Mask Dude/Idle (32x32).png",
-                "Pixel Adventure 1/Assets/Main Characters/Virtual Guy/Idle (32x32).png",
-                "Pixel Adventure 1/Assets/Main Characters/Ninja Frog/Idle (32x32).png"
+                "Comensal_PinkMan",
+                "Comensal_MaskDude",
+                "Comensal_VirtualGuy",
+                "Comensal_NinjaFrog"
             };
 
-            foreach (var r in rutas)
+            foreach (var nom in nombresResources)
             {
-                Sprite sp = CargarPrimerFrameSprite(r, 32, 32, 32f);
+                Sprite sp = CargarPrimerFrameSprite(nom, 32, 32, 32f);
                 if (sp != null)
                 {
                     spritesComensales.Add(sp);
+                }
+            }
+
+            if (spritesComensales.Count == 0)
+            {
+                string[] rutas = new string[]
+                {
+                    "Pixel Adventure 1/Assets/Main Characters/Pink Man/Idle (32x32).png",
+                    "Pixel Adventure 1/Assets/Main Characters/Mask Dude/Idle (32x32).png",
+                    "Pixel Adventure 1/Assets/Main Characters/Virtual Guy/Idle (32x32).png",
+                    "Pixel Adventure 1/Assets/Main Characters/Ninja Frog/Idle (32x32).png"
+                };
+
+                foreach (var r in rutas)
+                {
+                    Sprite sp = CargarPrimerFrameSprite(r, 32, 32, 32f);
+                    if (sp != null)
+                    {
+                        spritesComensales.Add(sp);
+                    }
                 }
             }
         }
 
         private Sprite CargarPrimerFrameSprite(string rutaRelativa, int wFrame, int hFrame, float ppu)
         {
+            string nombreSinExt = System.IO.Path.GetFileNameWithoutExtension(rutaRelativa);
+
+            // 1. Intentar cargar desde Resources (100% compatible con WebGL / itch.io)
+            Sprite resSprite = Resources.Load<Sprite>(nombreSinExt);
+            if (resSprite != null) return resSprite;
+
+            Texture2D resTex = Resources.Load<Texture2D>(nombreSinExt);
+            if (resTex != null)
+            {
+                int ancho = Mathf.Min(wFrame, resTex.width);
+                int alto = Mathf.Min(hFrame, resTex.height);
+                return Sprite.Create(resTex, new Rect(0, resTex.height - alto, ancho, alto), new Vector2(0.5f, 0f), ppu);
+            }
+
+            // 2. Fallback de desarrollo con Application.dataPath en Editor / PC
             try
             {
                 string path = System.IO.Path.Combine(Application.dataPath, rutaRelativa);
