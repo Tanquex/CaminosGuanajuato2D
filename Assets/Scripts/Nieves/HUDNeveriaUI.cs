@@ -384,6 +384,14 @@ namespace CaminosDeGuanajuato.Nieves
 
         private void OnGUI()
         {
+            if (SceneManager.GetActiveScene().name != "Nivel2_DesafioNieves")
+            {
+                estaPausado = false;
+                mostrarOpcionesPausa = false;
+                Destroy(gameObject);
+                return;
+            }
+
             InicializarEstilos();
 
             if (NeveriaGameManager.Instance == null) return;
@@ -426,19 +434,14 @@ namespace CaminosDeGuanajuato.Nieves
 
         private void DibujarBarraSuperior()
         {
-            float ancho = Screen.width - 30;
-            float alto = 42;
-            GUILayout.BeginArea(new Rect(15, 10, ancho, alto), estiloCajaOscura);
-            GUILayout.BeginHorizontal();
+            float ancho = Screen.width - 24f;
+            float alto = 38f;
+            Rect rBarra = new Rect(12f, 8f, ancho, alto);
 
-            GUILayout.Label("🍨 NIEVES DE DOLORES HIDALGO", estiloPuntaje, GUILayout.Width(270));
+            ColonialUIHelper.DibujarTarjetaInterior(rBarra);
 
-            // Clientes atendidos
             int at = NeveriaGameManager.Instance.ClientesAtendidos;
             int obj = NeveriaGameManager.Instance.ClientesObjetivo;
-            GUILayout.Label($"Comensales: <b>{at} / {obj}</b>", estiloTextoBlanco, GUILayout.Width(140));
-
-            // Vidas / Paciencia del pueblo
             int perdidos = NeveriaGameManager.Instance.ClientesPerdidos;
             int maxPerd = NeveriaGameManager.Instance.MaxClientesPerdidos;
             string strikes = "";
@@ -446,40 +449,45 @@ namespace CaminosDeGuanajuato.Nieves
             {
                 strikes += (i < perdidos) ? "💔 " : "❤️ ";
             }
-            GUILayout.Label($"Paciencia: {strikes}", estiloTextoBlanco, GUILayout.Width(160));
-
-            GUILayout.FlexibleSpace();
-
-            // Temporizador y Puntaje
             float t = NeveriaGameManager.Instance.TiempoRestante;
-            GUILayout.Label($"⏳ Tiempo: {Mathf.CeilToInt(t):D2}s", estiloTemporizador, GUILayout.Width(120));
-            GUILayout.Label($"⭐ Puntos: {NeveriaGameManager.Instance.PuntajeTotal}", estiloPuntaje, GUILayout.Width(120));
 
-            // Botón de Pausa en barra superior
-            if (GUILayout.Button("⏸️ PAUSA [ESC]", estiloBotonAccion, GUILayout.Width(130), GUILayout.Height(28)))
+            // Botón de Pausa fijo a la derecha (nunca se corta)
+            float wPausa = 116f;
+            Rect rBtnPausa = new Rect(rBarra.xMax - wPausa - 8f, rBarra.y + 5f, wPausa, 28f);
+            if (ColonialUIHelper.BotonColonial(rBtnPausa, "⏸ PAUSA [ESC]", ColonialUIHelper.VarianteBoton.Madera, 11))
             {
                 AlternarPausa();
             }
 
-            GUILayout.EndHorizontal();
-            GUILayout.EndArea();
+            // Distribución horizontal limpia a la izquierda del botón de pausa
+            float wDisp = rBtnPausa.x - rBarra.x - 16f;
+            float yTxt = rBarra.y + 7f;
+            float hTxt = 24f;
+
+            GUI.Label(new Rect(rBarra.x + 12f, yTxt, wDisp * 0.30f, hTxt), "🍨 NIEVES DE DOLORES", estiloPuntaje);
+            GUI.Label(new Rect(rBarra.x + 12f + wDisp * 0.30f, yTxt, wDisp * 0.20f, hTxt), $"👥 Comensales: <b>{at}/{obj}</b>", estiloTextoBlanco);
+            GUI.Label(new Rect(rBarra.x + 12f + wDisp * 0.50f, yTxt, wDisp * 0.20f, hTxt), $"Paciencia: {strikes}", estiloTextoBlanco);
+            GUI.Label(new Rect(rBarra.x + 12f + wDisp * 0.70f, yTxt, wDisp * 0.15f, hTxt), $"⏳ {Mathf.CeilToInt(t):D2}s", estiloTemporizador);
+            GUI.Label(new Rect(rBarra.x + 12f + wDisp * 0.85f, yTxt, wDisp * 0.15f, hTxt), $"⭐ {NeveriaGameManager.Instance.PuntajeTotal} pts", estiloPuntaje);
         }
 
         private void DibujarComandaYConsejero()
         {
             var cliente = NeveriaGameManager.Instance.ClienteActual;
-            float ancho = Mathf.Min(440, Screen.width * 0.40f);
-            float alto = 92;
+            float ancho = Mathf.Clamp(Screen.width * 0.44f, 390f, 450f);
+            float alto = 94f;
+            Rect rComanda = new Rect(12f, 52f, ancho, alto);
 
-            GUILayout.BeginArea(new Rect(12, 48, ancho, alto), estiloCajaComanda);
-            GUILayout.Space(4);
+            ColonialUIHelper.DibujarTarjetaInterior(rComanda);
+
+            GUILayout.BeginArea(new Rect(rComanda.x + 10f, rComanda.y + 6f, rComanda.width - 20f, rComanda.height - 12f));
 
             if (cliente == null || cliente.Pedido == null)
             {
-                GUILayout.Label("⏳ Viene llegando un nuevo visitante a la plaza...", estiloSubtitulo);
+                GUILayout.Label("⏳ Viene llegando un nuevo habitante a la plaza...", estiloSubtitulo);
                 if (DonChonConsejero.Instance != null)
                 {
-                    GUILayout.Space(2);
+                    GUILayout.Space(4);
                     GUILayout.Label($"Don Chon: «{DonChonConsejero.Instance.MensajeActual}»", estiloTextoBlanco);
                 }
                 GUILayout.EndArea();
@@ -493,12 +501,12 @@ namespace CaminosDeGuanajuato.Nieves
             Texture2D texSab = ObtenerIconoSabor(pedido.saborDeseado);
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label($"🛎️ <b>{cliente.NombreCliente}</b> pide:", estiloPuntaje, GUILayout.Width(220));
+            GUILayout.Label($"🛎️ <b>{cliente.NombreCliente}</b> pide:", estiloTextoBlanco, GUILayout.Width(rComanda.width - 130f));
             GUILayout.FlexibleSpace();
-            GUILayout.Label($"Paciencia: {Mathf.CeilToInt(pedido.tiempoPacienciaRestante)}s", estiloTextoBlanco);
+            GUILayout.Label($"⏱ <b>{Mathf.CeilToInt(pedido.tiempoPacienciaRestante)}s</b>", estiloTemporizador);
             GUILayout.EndHorizontal();
 
-            GUILayout.Space(2);
+            GUILayout.Space(4);
 
             // Fila visual compacta con los iconos
             GUILayout.BeginHorizontal();
@@ -509,7 +517,7 @@ namespace CaminosDeGuanajuato.Nieves
                 GUI.DrawTexture(rIcoRec, texRec, ScaleMode.ScaleToFit);
                 GUILayout.Space(4);
             }
-            GUILayout.Label($"<color=#ffdd44><b>{recNombre}</b></color>", estiloTextoBlanco, GUILayout.Width(150));
+            GUILayout.Label($"<color=#ffdd44><b>{recNombre}</b></color>", estiloTextoBlanco, GUILayout.Width(155));
 
             GUILayout.Space(8);
 
@@ -523,10 +531,10 @@ namespace CaminosDeGuanajuato.Nieves
 
             GUILayout.EndHorizontal();
 
-            GUILayout.Space(4);
+            GUILayout.Space(6);
 
             // Barra de paciencia fluida
-            Rect rBarra = GUILayoutUtility.GetRect(ancho - 16, 9);
+            Rect rBarra = GUILayoutUtility.GetRect(rComanda.width - 24f, 8f);
             if (texBarraFondo != null) GUI.DrawTexture(rBarra, texBarraFondo);
             float pct = cliente.PorcentajePaciencia;
             Texture2D texColor = (pct > 0.5f) ? texBarraVerde : (pct > 0.25f ? texBarraAmarilla : texBarraRoja);
@@ -539,13 +547,16 @@ namespace CaminosDeGuanajuato.Nieves
         {
             if (MesaPreparacion.Instance == null) return;
 
-            float anchoPanel = Mathf.Min(940, Screen.width - 16);
-            float altoPanel = 142;
+            float anchoPanel = Mathf.Min(940f, Screen.width - 24f);
+            float altoPanel = 138f;
             float xPanel = (Screen.width - anchoPanel) * 0.5f;
-            float yPanel = Screen.height - altoPanel;
+            float yPanel = Screen.height - altoPanel - 6f;
 
-            GUILayout.BeginArea(new Rect(xPanel, yPanel, anchoPanel, altoPanel), estiloCajaOscura);
-            GUILayout.Space(4);
+            Rect rMesa = new Rect(xPanel, yPanel, anchoPanel, altoPanel);
+            ColonialUIHelper.DibujarTarjetaInterior(rMesa);
+
+            GUILayout.BeginArea(new Rect(rMesa.x + 12f, rMesa.y + 4f, rMesa.width - 24f, rMesa.height - 8f));
+            GUILayout.Space(2);
 
             // 1. Barra de Progreso de Pasos (Breadcrumbs visuales)
             bool tieneBase = MesaPreparacion.Instance.RecipienteActual != TipoRecipiente.Ninguno;
@@ -960,18 +971,24 @@ namespace CaminosDeGuanajuato.Nieves
 
         public void ReiniciarNivel()
         {
+            estaPausado = false;
+            mostrarOpcionesPausa = false;
             Time.timeScale = 1f;
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
 
         public void IrAlOverworld()
         {
+            estaPausado = false;
+            mostrarOpcionesPausa = false;
             Time.timeScale = 1f;
             SceneManager.LoadScene("Overworld_MapaGuanajuato");
         }
 
         public void IrAlMenu()
         {
+            estaPausado = false;
+            mostrarOpcionesPausa = false;
             Time.timeScale = 1f;
             SceneManager.LoadScene("MainMenu");
         }

@@ -12,22 +12,21 @@ namespace CaminosDeGuanajuato.Nieves
     }
 
     /// <summary>
-    /// Representa a un comensal turista que se aproxima al quiosco de Don Chon.
-    /// Utiliza sprites auténticos de Pixel Adventure 1, camina con balanceo y muestra
-    /// su globo de pedido en tiempo real.
+    /// Representa a un comensal que se aproxima al quiosco de nieves en el Nivel 2.
+    /// Soporta los personajes modulares por capas de Custom Character 2D Vol 1.
     /// </summary>
     public class ClienteTurista : MonoBehaviour
     {
         [Header("Datos del Cliente")]
-        [SerializeField] private string nombreCliente = "Turista Visitante";
+        [SerializeField] private string nombreCliente = "Visitante";
         [SerializeField] private PedidoNieve pedido;
         [SerializeField] private EstadoCliente estado = EstadoCliente.Esperando;
-        [SerializeField] private float velocidadCaminar = 2.4f;
+        [SerializeField] private float velocidadCaminar = 2.5f;
 
         private Vector3 posicionMostrador;
         private Vector3 posicionSalida;
-        private SpriteRenderer spriteRenderer;
-        private Vector3 escalaBase = new Vector3(1.6f, 1.6f, 1f);
+        private SpriteRenderer[] renderersCapas;
+        private Vector3 escalaBase = new Vector3(0.135f, 0.135f, 1f);
         private float tiempoGracia = 2.5f;
 
         public PedidoNieve Pedido => pedido;
@@ -39,12 +38,15 @@ namespace CaminosDeGuanajuato.Nieves
 
         private void Awake()
         {
-            spriteRenderer = GetComponent<SpriteRenderer>();
-            if (spriteRenderer == null) spriteRenderer = gameObject.AddComponent<SpriteRenderer>();
-            spriteRenderer.sortingOrder = 10;
+            ActualizarCacheRenderers();
         }
 
-        public void Configurar(PedidoNieve nuevoPedido, Vector3 destinoMostrador, Vector3 destinoSalida, Sprite spritePersonaje = null)
+        public void ActualizarCacheRenderers()
+        {
+            renderersCapas = GetComponentsInChildren<SpriteRenderer>(true);
+        }
+
+        public void Configurar(PedidoNieve nuevoPedido, Vector3 destinoMostrador, Vector3 destinoSalida, float escalaPersonaje = 0.135f)
         {
             pedido = nuevoPedido;
             nombreCliente = nuevoPedido.nombreCliente;
@@ -52,13 +54,12 @@ namespace CaminosDeGuanajuato.Nieves
             posicionSalida = destinoSalida;
             estado = EstadoCliente.Llegando;
             tiempoGracia = 2.5f;
+            escalaBase = new Vector3(escalaPersonaje, escalaPersonaje, 1f);
 
-            if (spriteRenderer == null) spriteRenderer = GetComponent<SpriteRenderer>();
-            if (spritePersonaje != null)
-            {
-                spriteRenderer.sprite = spritePersonaje;
-            }
-            transform.localScale = escalaBase;
+            ActualizarCacheRenderers();
+            // Al llegar desde la derecha hacia el mostrador en la izquierda, mira hacia la izquierda (-X)
+            float dirX = (posicionMostrador.x < transform.position.x) ? -1f : 1f;
+            transform.localScale = new Vector3(escalaBase.x * dirX, escalaBase.y, 1f);
         }
 
         private void Update()
@@ -67,19 +68,16 @@ namespace CaminosDeGuanajuato.Nieves
             {
                 case EstadoCliente.Llegando:
                     transform.position = Vector3.MoveTowards(transform.position, posicionMostrador, velocidadCaminar * Time.deltaTime);
-                    if (spriteRenderer != null)
-                    {
-                        spriteRenderer.flipX = (posicionMostrador.x < transform.position.x);
-                    }
 
-                    // Animación suave de caminata (balanceo)
-                    float balanceo = Mathf.Sin(Time.time * 12f) * 0.08f;
-                    transform.localScale = new Vector3(escalaBase.x, escalaBase.y + balanceo, 1f);
+                    float dirLlegada = (posicionMostrador.x <= transform.position.x) ? -1f : 1f;
+                    float balanceo = Mathf.Sin(Time.time * 12f) * (escalaBase.y * 0.045f);
+                    transform.localScale = new Vector3(escalaBase.x * dirLlegada, escalaBase.y + balanceo, 1f);
 
                     if (Vector3.Distance(transform.position, posicionMostrador) < 0.05f)
                     {
                         estado = EstadoCliente.Esperando;
-                        transform.localScale = escalaBase;
+                        // Mirar hacia el puesto de nieves (izquierda)
+                        transform.localScale = new Vector3(-escalaBase.x, escalaBase.y, 1f);
                     }
                     break;
 
@@ -88,22 +86,19 @@ namespace CaminosDeGuanajuato.Nieves
                     {
                         pedido.tiempoPacienciaRestante -= Time.deltaTime;
 
-                        // Respiración / Idle
-                        float respiracion = Mathf.Sin(Time.time * 4f) * 0.04f;
-                        transform.localScale = new Vector3(escalaBase.x, escalaBase.y + respiracion, 1f);
+                        // Respiración suave mirando hacia el puesto (-X)
+                        float respiracion = Mathf.Sin(Time.time * 4f) * (escalaBase.y * 0.025f);
+                        transform.localScale = new Vector3(-escalaBase.x, escalaBase.y + respiracion, 1f);
 
                         if (pedido.EstaExpirado)
                         {
                             tiempoGracia -= Time.deltaTime;
-                            // Tinte rojizo durante el periodo de gracia
-                            if (spriteRenderer != null)
-                            {
-                                spriteRenderer.color = Color.Lerp(Color.white, new Color(1f, 0.4f, 0.4f), Mathf.PingPong(Time.time * 5f, 1f));
-                            }
+                            Color tinteAlerta = Color.Lerp(Color.white, new Color(1f, 0.45f, 0.45f), Mathf.PingPong(Time.time * 5f, 1f));
+                            AplicarColorACapas(tinteAlerta);
 
                             if (tiempoGracia <= 0f)
                             {
-                                if (spriteRenderer != null) spriteRenderer.color = Color.white;
+                                AplicarColorACapas(Color.white);
                                 estado = EstadoCliente.MolestoSalida;
                                 OnPacienciaAgotada?.Invoke(this);
                             }
@@ -114,14 +109,11 @@ namespace CaminosDeGuanajuato.Nieves
                 case EstadoCliente.AtendidoFeliz:
                 case EstadoCliente.MolestoSalida:
                     transform.position = Vector3.MoveTowards(transform.position, posicionSalida, velocidadCaminar * 1.6f * Time.deltaTime);
-                    if (spriteRenderer != null)
-                    {
-                        spriteRenderer.flipX = (posicionSalida.x < transform.position.x);
-                    }
 
-                    // Balanceo al retirarse
-                    float pasoSalida = Mathf.Sin(Time.time * 14f) * 0.08f;
-                    transform.localScale = new Vector3(escalaBase.x, escalaBase.y + pasoSalida, 1f);
+                    // Al retirarse hacia la derecha (+X), el personaje mira a la derecha (+escalaBase.x)
+                    float dirSalida = (posicionSalida.x >= transform.position.x) ? 1f : -1f;
+                    float pasoSalida = Mathf.Sin(Time.time * 14f) * (escalaBase.y * 0.045f);
+                    transform.localScale = new Vector3(escalaBase.x * dirSalida, escalaBase.y + pasoSalida, 1f);
 
                     if (Vector3.Distance(transform.position, posicionSalida) < 0.2f)
                     {
@@ -131,13 +123,30 @@ namespace CaminosDeGuanajuato.Nieves
             }
         }
 
+        private void AplicarColorACapas(Color color)
+        {
+            if (renderersCapas == null || renderersCapas.Length == 0)
+            {
+                ActualizarCacheRenderers();
+            }
+            for (int i = 0; i < renderersCapas.Length; i++)
+            {
+                if (renderersCapas[i] != null)
+                {
+                    renderersCapas[i].color = color;
+                }
+            }
+        }
+
         public void DespacharFeliz()
         {
+            AplicarColorACapas(Color.white);
             estado = EstadoCliente.AtendidoFeliz;
         }
 
         public void DespacharMolesto()
         {
+            AplicarColorACapas(Color.white);
             estado = EstadoCliente.MolestoSalida;
         }
     }

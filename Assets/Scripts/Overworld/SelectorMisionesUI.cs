@@ -50,7 +50,7 @@ namespace CaminosDeGuanajuato.Overworld
 
             if (estiloTituloMision != null) return;
 
-            estiloBadgeEstado = new GUIStyle(GUI.skin.label)
+            estiloBadgeEstado = new GUIStyle
             {
                 fontSize = 11,
                 fontStyle = FontStyle.Bold,
@@ -59,7 +59,7 @@ namespace CaminosDeGuanajuato.Overworld
             };
             estiloBadgeEstado.normal.textColor = new Color(1.0f, 0.88f, 0.35f);
 
-            estiloTituloMision = new GUIStyle(GUI.skin.label)
+            estiloTituloMision = new GUIStyle
             {
                 fontSize = 14,
                 fontStyle = FontStyle.Bold,
@@ -69,7 +69,7 @@ namespace CaminosDeGuanajuato.Overworld
             };
             estiloTituloMision.normal.textColor = new Color(0.99f, 0.82f, 0.30f);
 
-            estiloGeneroMision = new GUIStyle(GUI.skin.label)
+            estiloGeneroMision = new GUIStyle
             {
                 fontSize = 11,
                 fontStyle = FontStyle.Italic,
@@ -78,7 +78,7 @@ namespace CaminosDeGuanajuato.Overworld
             };
             estiloGeneroMision.normal.textColor = new Color(0.86f, 0.78f, 0.65f);
 
-            estiloDescMision = new GUIStyle(GUI.skin.label)
+            estiloDescMision = new GUIStyle
             {
                 fontSize = 12,
                 fontStyle = FontStyle.Normal,
@@ -88,7 +88,7 @@ namespace CaminosDeGuanajuato.Overworld
             };
             estiloDescMision.normal.textColor = new Color(0.94f, 0.90f, 0.82f);
 
-            estiloRecompensa = new GUIStyle(GUI.skin.label)
+            estiloRecompensa = new GUIStyle
             {
                 fontSize = 11,
                 fontStyle = FontStyle.Bold,

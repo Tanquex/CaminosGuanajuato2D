@@ -6,9 +6,8 @@ namespace CaminosDeGuanajuato.UI
 {
     /// <summary>
     /// Controlador principal del Menú de Inicio de "Caminos de Guanajuato 2D: Cuna de la Libertad".
-    /// Alinea dinámicamente los botones sobre el área interior de terracota del cartel de Talavera
-    /// de la ilustración original en cualquier resolución o relación de aspecto, e integra
-    /// ventanas modales de Opciones y Créditos con acabado artesanal colonial.
+    /// Encaja los botones interactivos exactamente dentro del área interior de terracota
+    /// del cartel de Talavera de la ilustración original e integra modales coloniales.
     /// </summary>
     public class MainMenuManager : MonoBehaviour
     {
@@ -16,14 +15,11 @@ namespace CaminosDeGuanajuato.UI
         [SerializeField] private string nombreEscenaJuego = "Overworld_MapaGuanajuato";
 
         [Header("Fondo del Menú Principal")]
-        [Tooltip("SpriteRenderer que muestra el arte del menú principal")]
         [SerializeField] private SpriteRenderer fondoSpriteRenderer;
+        [SerializeField] private Texture2D imagenFondoMenu;
 
-        [Tooltip("Imagen de respaldo opcional")]
-        [SerializeField] private Sprite imagenFondoMenu;
-
-        // Coordenadas normalizadas exactas del rectángulo interior de terracota
-        // medido sobre backgroundPantallaPrincipal.jpg (2752 x 1536):
+        // Coordenadas normalizadas del interior de terracota del cartel de Talavera
+        // medidas sobre backgroundPantallaPrincipal.jpg (2752 x 1536):
         // X interior: 758..1192 / 2752 -> 0.2755 .. 0.4331
         // Y interior desde arriba: 826..1116 / 1536 -> 0.5378 .. 0.7266
         private const float CARTEL_U_MIN = 0.276f;
@@ -32,28 +28,16 @@ namespace CaminosDeGuanajuato.UI
         private const float CARTEL_VTOP_MAX = 0.725f;
         private const float ASPECTO_IMAGEN_FONDO = 2752f / 1536f;
 
-        // Estado de modales
         private bool mostrarOpciones = false;
         private bool mostrarCreditos = false;
 
-        // Opciones de Audio y Pantalla
         private float volumenGeneral = 0.8f;
         private float volumenMusica = 0.75f;
         private float volumenSFX = 0.85f;
         private bool pantallaCompleta = true;
 
-        // Texturas y estilos para los botones incrustados en el cartel de Talavera
-        private Texture2D texPlacaCartelNormal;
-        private Texture2D texPlacaCartelHover;
-        private GUIStyle estiloBotonCartel;
         private GUIStyle estiloTextoCreditosTitulo;
         private GUIStyle estiloTextoCreditosCuerpo;
-
-        private void Awake()
-        {
-            ColonialUIHelper.AsegurarInicializacion();
-            CrearTexturasPlacaCartel();
-        }
 
         private void Start()
         {
@@ -64,6 +48,10 @@ namespace CaminosDeGuanajuato.UI
             {
                 GameObject audioGO = new GameObject("AudioColonialManager");
                 audioGO.AddComponent<AudioColonialManager>();
+            }
+            else
+            {
+                AudioColonialManager.Instance.IniciarMusicaDeFondo();
             }
 
             ConfigurarFondoMenu();
@@ -91,11 +79,6 @@ namespace CaminosDeGuanajuato.UI
                     fondoSpriteRenderer = objFondo.GetComponent<SpriteRenderer>();
                 }
             }
-
-            if (fondoSpriteRenderer != null && imagenFondoMenu != null && fondoSpriteRenderer.sprite == null)
-            {
-                fondoSpriteRenderer.sprite = imagenFondoMenu;
-            }
         }
 
         private void AjustarFondoACamara()
@@ -110,7 +93,7 @@ namespace CaminosDeGuanajuato.UI
             float altoCamara = cam.orthographicSize * 2f;
             float anchoCamara = altoCamara * cam.aspect;
 
-            Vector2 tamanoSprite = fondoSpriteRenderer.sprite.bounds.size;
+            Vector2 tamanoSprite = fondoSpriteRenderer.sprite.rect.size / fondoSpriteRenderer.sprite.pixelsPerUnit;
             if (tamanoSprite.x <= 0.001f || tamanoSprite.y <= 0.001f)
                 return;
 
@@ -118,78 +101,17 @@ namespace CaminosDeGuanajuato.UI
             float escalaY = altoCamara / tamanoSprite.y;
             float escalaFinal = Mathf.Max(escalaX, escalaY);
 
-            fondoSpriteRenderer.transform.position = new Vector3(cam.transform.position.x, cam.transform.position.y, 0f);
             fondoSpriteRenderer.transform.localScale = new Vector3(escalaFinal, escalaFinal, 1f);
-        }
-
-        private void CrearTexturasPlacaCartel()
-        {
-            if (texPlacaCartelNormal != null && texPlacaCartelHover != null)
-                return;
-
-            // Placa de madera caoba/terracota oscuro con filete dorado que armoniza con la pintura
-            texPlacaCartelNormal = CrearTexturaPlaca(
-                new Color(0.26f, 0.10f, 0.05f, 0.92f),
-                new Color(0.38f, 0.15f, 0.08f, 0.92f),
-                new Color(0.92f, 0.72f, 0.26f, 0.95f)
-            );
-
-            // Al pasar el cursor se ilumina en oro cálido / ámbar virreinal
-            texPlacaCartelHover = CrearTexturaPlaca(
-                new Color(0.58f, 0.25f, 0.08f, 0.98f),
-                new Color(0.76f, 0.36f, 0.12f, 0.98f),
-                new Color(1.00f, 0.90f, 0.45f, 1.00f)
-            );
-        }
-
-        private Texture2D CrearTexturaPlaca(Color colorInf, Color colorSup, Color colorBorde)
-        {
-            int w = 48;
-            int h = 24;
-            Texture2D tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
-            tex.wrapMode = TextureWrapMode.Clamp;
-
-            for (int y = 0; y < h; y++)
-            {
-                float t = (float)y / (h - 1);
-                Color relleno = Color.Lerp(colorInf, colorSup, t);
-
-                for (int x = 0; x < w; x++)
-                {
-                    int dx = Mathf.Min(x, w - 1 - x);
-                    int dy = Mathf.Min(y, h - 1 - y);
-                    int dMin = Mathf.Min(dx, dy);
-
-                    if (dMin == 0)
-                        tex.SetPixel(x, y, new Color(0.12f, 0.04f, 0.02f, 0.95f));
-                    else if (dMin == 1)
-                        tex.SetPixel(x, y, colorBorde);
-                    else
-                        tex.SetPixel(x, y, relleno);
-                }
-            }
-            tex.Apply();
-            return tex;
+            fondoSpriteRenderer.transform.position = new Vector3(cam.transform.position.x, cam.transform.position.y, 0f);
         }
 
         private void InicializarEstilos()
         {
             ColonialUIHelper.AsegurarInicializacion();
-            CrearTexturasPlacaCartel();
-
-            if (estiloBotonCartel == null)
-            {
-                estiloBotonCartel = new GUIStyle(GUI.skin.button)
-                {
-                    fontStyle = FontStyle.Bold,
-                    alignment = TextAnchor.MiddleCenter,
-                    padding = new RectOffset(4, 4, 2, 2)
-                };
-            }
 
             if (estiloTextoCreditosTitulo == null)
             {
-                estiloTextoCreditosTitulo = new GUIStyle(GUI.skin.label)
+                estiloTextoCreditosTitulo = new GUIStyle
                 {
                     fontSize = 14,
                     fontStyle = FontStyle.Bold,
@@ -201,7 +123,7 @@ namespace CaminosDeGuanajuato.UI
 
             if (estiloTextoCreditosCuerpo == null)
             {
-                estiloTextoCreditosCuerpo = new GUIStyle(GUI.skin.label)
+                estiloTextoCreditosCuerpo = new GUIStyle
                 {
                     fontSize = 13,
                     fontStyle = FontStyle.Normal,
@@ -241,37 +163,10 @@ namespace CaminosDeGuanajuato.UI
 
         /// <summary>
         /// Calcula en coordenadas de pantalla el rectángulo exacto del interior de terracota
-        /// del cartel de Talavera pintado en el fondo, adaptándose a cualquier aspecto de cámara.
+        /// del cartel de Talavera según el escalado Cover (Mathf.Max) de la ilustración 2752x1536.
         /// </summary>
         private Rect ObtenerRectInteriorCartelTalavera()
         {
-            Camera cam = Camera.main;
-            if (cam != null && fondoSpriteRenderer != null && fondoSpriteRenderer.sprite != null)
-            {
-                Bounds b = fondoSpriteRenderer.bounds;
-                if (b.size.x > 0.01f && b.size.y > 0.01f)
-                {
-                    float worldXMin = b.min.x + CARTEL_U_MIN * b.size.x;
-                    float worldXMax = b.min.x + CARTEL_U_MAX * b.size.x;
-                    float worldYMax = b.max.y - CARTEL_VTOP_MIN * b.size.y;
-                    float worldYMin = b.max.y - CARTEL_VTOP_MAX * b.size.y;
-
-                    Vector3 spTopLeft = cam.WorldToScreenPoint(new Vector3(worldXMin, worldYMax, 0f));
-                    Vector3 spBottomRight = cam.WorldToScreenPoint(new Vector3(worldXMax, worldYMin, 0f));
-
-                    float guiX = spTopLeft.x;
-                    float guiY = Screen.height - spTopLeft.y;
-                    float guiW = spBottomRight.x - spTopLeft.x;
-                    float guiH = spTopLeft.y - spBottomRight.y;
-
-                    if (guiW > 40f && guiH > 40f)
-                    {
-                        return new Rect(guiX, guiY, guiW, guiH);
-                    }
-                }
-            }
-
-            // Respaldo matemático exacto para modo Cover (Mathf.Max(escalaX, escalaY))
             float screenW = Screen.width;
             float screenH = Screen.height;
             float screenAspect = screenW / Mathf.Max(1f, screenH);
@@ -308,9 +203,8 @@ namespace CaminosDeGuanajuato.UI
         {
             Rect rInterior = ObtenerRectInteriorCartelTalavera();
 
-            // Margen interior sutil para respetar el borde pintado del cartel
-            float padX = Mathf.Max(4f, rInterior.width * 0.04f);
-            float padY = Mathf.Max(4f, rInterior.height * 0.05f);
+            float padX = Mathf.Max(5f, rInterior.width * 0.045f);
+            float padY = Mathf.Max(4f, rInterior.height * 0.055f);
 
             Rect rArea = new Rect(
                 rInterior.x + padX,
@@ -322,64 +216,32 @@ namespace CaminosDeGuanajuato.UI
             int numBotones = 4;
             float espacio = Mathf.Clamp(rArea.height * 0.055f, 3f, 8f);
             float altoBoton = (rArea.height - espacio * (numBotones - 1)) / numBotones;
-            int tamFuente = Mathf.Clamp(Mathf.RoundToInt(altoBoton * 0.46f), 11, 17);
+            int tamFuente = Mathf.Clamp(Mathf.RoundToInt(altoBoton * 0.45f), 11, 16);
 
             float yActual = rArea.y;
 
-            if (DibujarBotonPlacaCartel(new Rect(rArea.x, yActual, rArea.width, altoBoton), "▶ INICIAR", tamFuente))
+            if (ColonialUIHelper.BotonColonial(new Rect(rArea.x, yActual, rArea.width, altoBoton), "▶ INICIAR", ColonialUIHelper.VarianteBoton.Madera, tamFuente))
             {
                 IniciarJuego();
             }
             yActual += altoBoton + espacio;
 
-            if (DibujarBotonPlacaCartel(new Rect(rArea.x, yActual, rArea.width, altoBoton), "🗺️ CONTINUAR", tamFuente))
+            if (ColonialUIHelper.BotonColonial(new Rect(rArea.x, yActual, rArea.width, altoBoton), "🗺️ CONTINUAR", ColonialUIHelper.VarianteBoton.Madera, tamFuente))
             {
                 ContinuarJuego();
             }
             yActual += altoBoton + espacio;
 
-            if (DibujarBotonPlacaCartel(new Rect(rArea.x, yActual, rArea.width, altoBoton), "⚙ OPCIONES", tamFuente))
+            if (ColonialUIHelper.BotonColonial(new Rect(rArea.x, yActual, rArea.width, altoBoton), "⚙ OPCIONES", ColonialUIHelper.VarianteBoton.Madera, tamFuente))
             {
                 mostrarOpciones = true;
             }
             yActual += altoBoton + espacio;
 
-            if (DibujarBotonPlacaCartel(new Rect(rArea.x, yActual, rArea.width, altoBoton), "📜 CRÉDITOS", tamFuente))
+            if (ColonialUIHelper.BotonColonial(new Rect(rArea.x, yActual, rArea.width, altoBoton), "📜 CRÉDITOS", ColonialUIHelper.VarianteBoton.Madera, tamFuente))
             {
                 mostrarCreditos = true;
             }
-        }
-
-        private bool DibujarBotonPlacaCartel(Rect rect, string texto, int fontSize)
-        {
-            bool hover = rect.Contains(Event.current.mousePosition);
-            Texture2D tex = hover ? texPlacaCartelHover : texPlacaCartelNormal;
-
-            if (tex != null)
-            {
-                GUI.DrawTexture(rect, tex);
-            }
-
-            estiloBotonCartel.fontSize = fontSize;
-            estiloBotonCartel.normal.background = null;
-            estiloBotonCartel.hover.background = null;
-            estiloBotonCartel.active.background = null;
-
-            // Sombra del texto
-            estiloBotonCartel.normal.textColor = new Color(0.08f, 0.02f, 0.01f, 0.90f);
-            GUI.Label(new Rect(rect.x + 1f, rect.y + 1f, rect.width, rect.height), texto, estiloBotonCartel);
-
-            estiloBotonCartel.normal.textColor = hover
-                ? new Color(1.0f, 0.96f, 0.78f)
-                : new Color(0.99f, 0.92f, 0.76f);
-            estiloBotonCartel.hover.textColor = new Color(1.0f, 0.97f, 0.84f);
-
-            bool presionado = GUI.Button(rect, texto, estiloBotonCartel);
-            if (presionado && AudioColonialManager.Instance != null)
-            {
-                AudioColonialManager.Instance.ReproducirClickBoton();
-            }
-            return presionado;
         }
 
         private void DibujarBotonSalirEsquina()
@@ -413,7 +275,6 @@ namespace CaminosDeGuanajuato.UI
             float wInt = rectModal.width - 44f;
             float yCursor = rectModal.y + 78f;
 
-            // Tarjeta 1: Equipo de Desarrollo
             Rect rEquipo = new Rect(xInt, yCursor, wInt, 72f);
             ColonialUIHelper.DibujarTarjetaInterior(rEquipo);
             GUI.Label(new Rect(rEquipo.x, rEquipo.y + 6f, rEquipo.width, 20f), "⚒ EQUIPO DE DESARROLLO", estiloTextoCreditosTitulo);
@@ -424,7 +285,6 @@ namespace CaminosDeGuanajuato.UI
             );
             yCursor += 80f;
 
-            // Tarjeta 2: Contexto Cultural
             Rect rCultura = new Rect(xInt, yCursor, wInt, 68f);
             ColonialUIHelper.DibujarTarjetaInterior(rCultura);
             GUI.Label(new Rect(rCultura.x, rCultura.y + 6f, rCultura.width, 20f), "🏛️ PATRIMONIO E HISTORIA", estiloTextoCreditosTitulo);
@@ -435,7 +295,6 @@ namespace CaminosDeGuanajuato.UI
             );
             yCursor += 76f;
 
-            // Tarjeta 3: Herramientas
             Rect rTools = new Rect(xInt, yCursor, wInt, 48f);
             ColonialUIHelper.DibujarTarjetaInterior(rTools);
             GUI.Label(
@@ -445,7 +304,7 @@ namespace CaminosDeGuanajuato.UI
             );
 
             float wBtn = 200f;
-            float hBtn = 38f;
+            float hBtn = 36f;
             Rect rVolver = new Rect(
                 rectModal.x + (rectModal.width - wBtn) * 0.5f,
                 rectModal.yMax - hBtn - 16f,

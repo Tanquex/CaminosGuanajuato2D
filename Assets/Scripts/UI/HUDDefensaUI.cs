@@ -246,6 +246,15 @@ namespace CaminosDeGuanajuato.UI
 
         private void OnGUI()
         {
+            string escenaActual = SceneManager.GetActiveScene().name;
+            if (escenaActual == "MainMenu" || escenaActual == "Overworld_MapaGuanajuato" || escenaActual == "Nivel2_DesafioNieves")
+            {
+                estaPausado = false;
+                mostrarOpcionesPausa = false;
+                Destroy(gameObject);
+                return;
+            }
+
             InicializarEstilos();
 
             bool estaDerrotado = AntorchaLibertaria.Instance != null && AntorchaLibertaria.Instance.EstaExtinguida;
@@ -631,18 +640,24 @@ namespace CaminosDeGuanajuato.UI
 
         public void IrAlOverworld()
         {
+            estaPausado = false;
+            mostrarOpcionesPausa = false;
             Time.timeScale = 1f;
             SceneManager.LoadScene("Overworld_MapaGuanajuato");
         }
 
         public void ReiniciarNivel()
         {
+            estaPausado = false;
+            mostrarOpcionesPausa = false;
             Time.timeScale = 1f;
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
 
         public void IrAlMenuPrincipal()
         {
+            estaPausado = false;
+            mostrarOpcionesPausa = false;
             Time.timeScale = 1f;
             SceneManager.LoadScene("MainMenu");
         }

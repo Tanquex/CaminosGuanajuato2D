@@ -15,8 +15,9 @@ namespace CaminosDeGuanajuato.Nieves
 
     /// <summary>
     /// Administrador del Nivel 2: El Desafío de las Nieves Tradicionales.
-    /// Configura automáticamente el escenario con el Quiosco y la Parroquia de Dolores Hidalgo,
-    /// sitúa a Guanajicho y a Don Chon en el puesto, y atiende a comensales reales de Pixel Adventure.
+    /// Configura el escenario del Jardín Principal y Parroquia de Dolores Hidalgo,
+    /// y ensambla los personajes del paquete importado Custom Character 2D Vol 1
+    /// para Don Chon y los comensales sobre el empedrado de la plaza.
     /// </summary>
     public class NeveriaGameManager : MonoBehaviour
     {
@@ -27,20 +28,31 @@ namespace CaminosDeGuanajuato.Nieves
         [SerializeField] private int maxClientesPerdidos = 3;
         [SerializeField] private float duracionJornada = 140f;
 
-        [Header("Puntos de Movimiento")]
-        [SerializeField] private Vector3 puntoSpawnCliente = new Vector3(8.5f, -0.6f, 0f);
-        [SerializeField] private Vector3 puntoMostradorCliente = new Vector3(0.6f, -0.6f, 0f);
-        [SerializeField] private Vector3 puntoSalidaCliente = new Vector3(9.0f, -0.6f, 0f);
+        [Header("Puntos de Movimiento sobre el Empedrado")]
+        [SerializeField] private Vector3 puntoSpawnCliente = new Vector3(7.2f, -2.28f, 0f);
+        [SerializeField] private Vector3 puntoMostradorCliente = new Vector3(1.25f, -2.28f, 0f);
+        [SerializeField] private Vector3 puntoSalidaCliente = new Vector3(7.8f, -2.28f, 0f);
 
-        // Referencias a fondo y personajes del escenario
         private SpriteRenderer fondoEscenarioRenderer;
-        private GameObject goGuanajicho;
         private GameObject goDonChon;
 
-        // Sprites de personajes cacheados
-        private List<Sprite> spritesComensales = new List<Sprite>();
+        // Caché de texturas y sprites de Custom Character 2D Vol 1 (exclusivo Nivel 2)
+        private Dictionary<string, Texture2D> cacheTexturasCC = new Dictionary<string, Texture2D>();
+        private Dictionary<string, Sprite> cacheSpritesCC = new Dictionary<string, Sprite>();
 
-        // Estado de la partida
+        private struct ConfiguracionPersonajeCC
+        {
+            public string body;
+            public string hairBack;
+            public string hairFront;
+            public string ear;
+            public Rect rectEyebrow;
+            public Rect rectEye;
+            public Rect rectMouth;
+        }
+
+        private List<ConfiguracionPersonajeCC> catalogoVariantesCC = new List<ConfiguracionPersonajeCC>();
+
         private EstadoJuegoNeveria estadoJuego = EstadoJuegoNeveria.Jugando;
         private int clientesAtendidos = 0;
         private int clientesPerdidos = 0;
@@ -77,14 +89,19 @@ namespace CaminosDeGuanajuato.Nieves
             }
             Instance = this;
             tiempoRestante = duracionJornada;
+
+            // Posiciones sobre la calle empedrada a la derecha del puesto
+            puntoSpawnCliente = new Vector3(7.2f, -2.28f, 0f);
+            puntoMostradorCliente = new Vector3(1.25f, -2.28f, 0f);
+            puntoSalidaCliente = new Vector3(7.8f, -2.28f, 0f);
         }
 
         private void Start()
         {
             Time.timeScale = 1f;
+            InicializarCatalogoCustomCharacterVol1();
             ConfigurarEscenarioColonial();
-            CargarSpritesComensales();
-            StartCoroutine(GenerarSiguienteCliente(1.2f));
+            StartCoroutine(GenerarSiguienteCliente(1.0f));
         }
 
         private void Update()
@@ -101,10 +118,108 @@ namespace CaminosDeGuanajuato.Nieves
         }
 
         /// <summary>
-        /// Monta el escenario visual con el quiosco de Dolores Hidalgo y coloca a Guanajicho y a Don Chon.
+        /// Prepara las combinaciones de cuerpo, peinado y rostro del paquete Custom Character 2D Vol 1.
+        /// </summary>
+        private void InicializarCatalogoCustomCharacterVol1()
+        {
+            catalogoVariantesCC.Clear();
+
+            // Coordenadas de sub-sprites en eye.png (540x300) y mouth.png (192x192)
+            Rect cejaNormal = new Rect(0, 200, 180, 100);     // eye_0
+            Rect cejaAmable = new Rect(180, 200, 180, 100);   // eye_1
+            Rect cejaFirme = new Rect(360, 200, 180, 100);    // eye_2
+
+            Rect ojosAbiertos = new Rect(180, 100, 180, 100); // eye_4
+            Rect ojosAlegres = new Rect(0, 0, 180, 100);      // eye_6
+
+            Rect bocaSonrisa = new Rect(64, 0, 64, 64);       // mouth_7
+            Rect bocaAlegre = new Rect(0, 128, 64, 64);       // mouth_0
+            Rect bocaSerena = new Rect(64, 64, 64, 64);       // mouth_4
+            Rect bocaEntusiasmo = new Rect(0, 0, 64, 64);     // mouth_6
+
+            // Variante 1: Casaca Azul, Cabello Rubio Lacio
+            catalogoVariantesCC.Add(new ConfiguracionPersonajeCC
+            {
+                body = "body/body1",
+                hairBack = "hair_back/h_b_b1",
+                hairFront = "hair_front/h_f_b1",
+                ear = "face/face_ear_00",
+                rectEyebrow = cejaAmable,
+                rectEye = ojosAbiertos,
+                rectMouth = bocaSonrisa
+            });
+
+            // Variante 2: Casaca Roja, Cabello Oscuro Rebelde
+            catalogoVariantesCC.Add(new ConfiguracionPersonajeCC
+            {
+                body = "body/body2",
+                hairBack = "hair_back/h_b_a3",
+                hairFront = "hair_front/h_f_a3",
+                ear = "face/face_ear_00",
+                rectEyebrow = cejaNormal,
+                rectEye = ojosAbiertos,
+                rectMouth = bocaAlegre
+            });
+
+            // Variante 3: Casaca Naranja, Cabello Castaño/Rojo Lacio
+            catalogoVariantesCC.Add(new ConfiguracionPersonajeCC
+            {
+                body = "body/body3",
+                hairBack = "hair_back/h_b_b2",
+                hairFront = "hair_front/h_f_b2",
+                ear = "face/face_ear_00",
+                rectEyebrow = cejaNormal,
+                rectEye = ojosAbiertos,
+                rectMouth = bocaSonrisa
+            });
+
+            // Variante 4: Casaca Negra, Cabello Rubio Rebelde
+            catalogoVariantesCC.Add(new ConfiguracionPersonajeCC
+            {
+                body = "body/body4",
+                hairBack = "hair_back/h_b_a1",
+                hairFront = "hair_front/h_f_a1",
+                ear = "face/face_ear_00",
+                rectEyebrow = cejaFirme,
+                rectEye = ojosAbiertos,
+                rectMouth = bocaSerena
+            });
+
+            // Variante 5: Casaca Roja, Cabello Pelirrojo Rebelde
+            catalogoVariantesCC.Add(new ConfiguracionPersonajeCC
+            {
+                body = "body/body2",
+                hairBack = "hair_back/h_b_a2",
+                hairFront = "hair_front/h_f_a2",
+                ear = "face/face_ear_00",
+                rectEyebrow = cejaAmable,
+                rectEye = ojosAlegres,
+                rectMouth = bocaEntusiasmo
+            });
+
+            // Variante 6: Casaca Azul, Cabello Oscuro Lacio
+            catalogoVariantesCC.Add(new ConfiguracionPersonajeCC
+            {
+                body = "body/body1",
+                hairBack = "hair_back/h_b_b3",
+                hairFront = "hair_front/h_f_b3",
+                ear = "face/face_ear_00",
+                rectEyebrow = cejaNormal,
+                rectEye = ojosAbiertos,
+                rectMouth = bocaAlegre
+            });
+        }
+
+        /// <summary>
+        /// Monta el escenario visual con el quiosco de Dolores Hidalgo y sitúa a Don Chon
+        /// junto al mostrador usando Custom Character 2D Vol 1.
         /// </summary>
         private void ConfigurarEscenarioColonial()
         {
+            // Limpiar cualquier objeto heredado fuera de lugar si existiera
+            GameObject viejoGuanajicho = GameObject.Find("Guanajicho_EnMostrador");
+            if (viejoGuanajicho != null) Destroy(viejoGuanajicho);
+
             // 1. Fondo del Quiosco y Parroquia de Dolores Hidalgo
             GameObject fondoGO = GameObject.Find("Fondo_Quiosco_Nieves");
             if (fondoGO == null) fondoGO = new GameObject("Fondo_Quiosco_Nieves");
@@ -119,128 +234,186 @@ namespace CaminosDeGuanajuato.Nieves
             }
             AjustarFondoACamara();
 
-            // 2. Colocar a Guanajicho detrás del mostrador (a la izquierda)
-            if (goGuanajicho == null)
-            {
-                goGuanajicho = new GameObject("Guanajicho_EnMostrador");
-                goGuanajicho.transform.position = new Vector3(-2.8f, -0.4f, 0f);
-                goGuanajicho.transform.localScale = new Vector3(1.4f, 1.4f, 1f);
-
-                SpriteRenderer srG = goGuanajicho.AddComponent<SpriteRenderer>();
-                srG.sortingOrder = 5;
-
-                // Intentar cargar sprite de HeroKnight
-                Sprite spriteGuanajicho = CargarPrimerFrameSprite("HeroKnight", 100, 55, 64f);
-                if (spriteGuanajicho == null) spriteGuanajicho = CargarPrimerFrameSprite("Hero Knight - Pixel Art/Sprites/HeroKnight.png", 100, 55, 64f);
-                if (spriteGuanajicho != null)
-                {
-                    srG.sprite = spriteGuanajicho;
-                }
-            }
-
-            // 3. Colocar a Don Chon junto al puesto sobre el piso adoquinado
+            // 2. Colocar a Don Chon junto al puesto usando Custom Character 2D Vol 1
             if (goDonChon == null)
             {
+                goDonChon = GameObject.Find("DonChon_ElNeveroMayor");
+                if (goDonChon != null) Destroy(goDonChon);
+
                 goDonChon = new GameObject("DonChon_ElNeveroMayor");
-                goDonChon.transform.position = new Vector3(-1.1f, -0.6f, 0f);
-                goDonChon.transform.localScale = new Vector3(1.6f, 1.6f, 1f);
+                goDonChon.transform.position = new Vector3(-0.35f, -2.28f, 0f);
+                goDonChon.transform.localScale = new Vector3(0.135f, 0.135f, 1f);
 
-                SpriteRenderer srDC = goDonChon.AddComponent<SpriteRenderer>();
-                srDC.sortingOrder = 7;
-
-                Sprite spriteDonChon = CargarPrimerFrameSprite("Comensal_MaskDude", 32, 32, 32f);
-                if (spriteDonChon == null) spriteDonChon = CargarPrimerFrameSprite("Pixel Adventure 1/Assets/Main Characters/Mask Dude/Idle (32x32).png", 32, 32, 32f);
-                if (spriteDonChon != null)
+                ConfiguracionPersonajeCC configDonChon = new ConfiguracionPersonajeCC
                 {
-                    srDC.sprite = spriteDonChon;
-                }
-            }
-        }
-
-        private void CargarSpritesComensales()
-        {
-            spritesComensales.Clear();
-
-            string[] nombresResources = new string[]
-            {
-                "Comensal_PinkMan",
-                "Comensal_MaskDude",
-                "Comensal_VirtualGuy",
-                "Comensal_NinjaFrog"
-            };
-
-            foreach (var nom in nombresResources)
-            {
-                Sprite sp = CargarPrimerFrameSprite(nom, 32, 32, 32f);
-                if (sp != null)
-                {
-                    spritesComensales.Add(sp);
-                }
-            }
-
-            if (spritesComensales.Count == 0)
-            {
-                string[] rutas = new string[]
-                {
-                    "Pixel Adventure 1/Assets/Main Characters/Pink Man/Idle (32x32).png",
-                    "Pixel Adventure 1/Assets/Main Characters/Mask Dude/Idle (32x32).png",
-                    "Pixel Adventure 1/Assets/Main Characters/Virtual Guy/Idle (32x32).png",
-                    "Pixel Adventure 1/Assets/Main Characters/Ninja Frog/Idle (32x32).png"
+                    body = "body/body3",
+                    hairBack = "hair_back/h_b_b3",
+                    hairFront = "hair_front/h_f_b3",
+                    ear = "face/face_ear_00",
+                    rectEyebrow = new Rect(0, 200, 180, 100),   // eye_0
+                    rectEye = new Rect(180, 100, 180, 100),     // eye_4
+                    rectMouth = new Rect(0, 0, 64, 64)          // mouth_6 (sonrisa cálida)
                 };
 
-                foreach (var r in rutas)
-                {
-                    Sprite sp = CargarPrimerFrameSprite(r, 32, 32, 32f);
-                    if (sp != null)
-                    {
-                        spritesComensales.Add(sp);
-                    }
-                }
+                EnsamblarPersonajeCustomVol1(goDonChon, configDonChon, ordenBase: 5);
             }
         }
 
-        private Sprite CargarPrimerFrameSprite(string rutaRelativa, int wFrame, int hFrame, float ppu)
+        /// <summary>
+        /// Construye la jerarquía por capas (body, hair_back, face_ear, face_eye, face_bllow,
+        /// face_mouth, hair_front) idéntica a sample.unity de Custom Character 2D Vol 1,
+        /// con origen en la suela de las botas para caminar sobre el empedrado.
+        /// </summary>
+        private void EnsamblarPersonajeCustomVol1(GameObject raizPersonaje, ConfiguracionPersonajeCC config, int ordenBase)
         {
-            string nombreSinExt = System.IO.Path.GetFileNameWithoutExtension(rutaRelativa);
+            // En sample.unity el borde inferior de las botas (body 624x2048 centrado en -3.65)
+            // queda en y = -3.65 - 10.24 = -13.89. Desplazamos todas las capas +13.89 en Y
+            // para que el punto (0,0,0) del objeto raíz sea exactamente la planta de los pies.
+            Vector3 offsetPies = new Vector3(0.50f, 13.89f, 0f);
 
-            // 1. Obtener la textura desde Resources para recortar con precisión el primer frame (evita mostrar el spritesheet completo)
-            Texture2D resTex = Resources.Load<Texture2D>(nombreSinExt);
-            if (resTex == null)
+            CrearCapaSprite(
+                raizPersonaje.transform,
+                "body",
+                ObtenerSpriteCompletoCC(config.body),
+                new Vector3(-0.94f, -3.65f, 0f) + offsetPies,
+                ordenBase + 0
+            );
+
+            CrearCapaSprite(
+                raizPersonaje.transform,
+                "hair_back",
+                ObtenerSpriteCompletoCC(config.hairBack),
+                new Vector3(-0.461f, 4.729f, 0f) + offsetPies,
+                ordenBase + 1
+            );
+
+            CrearCapaSprite(
+                raizPersonaje.transform,
+                "face_ear",
+                ObtenerSpriteCompletoCC(config.ear),
+                new Vector3(-0.151f, 3.954f, 0f) + offsetPies,
+                ordenBase + 2
+            );
+
+            CrearCapaSprite(
+                raizPersonaje.transform,
+                "face_eye",
+                ObtenerSubSpriteCC("face/eye", config.rectEye),
+                new Vector3(0.349f, 3.92f, 0f) + offsetPies,
+                ordenBase + 2
+            );
+
+            CrearCapaSprite(
+                raizPersonaje.transform,
+                "face_bllow",
+                ObtenerSubSpriteCC("face/eye", config.rectEyebrow),
+                new Vector3(0.408f, 4.327f, 0f) + offsetPies,
+                ordenBase + 2
+            );
+
+            CrearCapaSprite(
+                raizPersonaje.transform,
+                "face_mouth",
+                ObtenerSubSpriteCC("face/mouth", config.rectMouth),
+                new Vector3(0.167f, 3.104f, 0f) + offsetPies,
+                ordenBase + 2
+            );
+
+            CrearCapaSprite(
+                raizPersonaje.transform,
+                "hair_front",
+                ObtenerSpriteCompletoCC(config.hairFront),
+                new Vector3(0.273f, 4.185f, 0f) + offsetPies,
+                ordenBase + 3
+            );
+        }
+
+        private void CrearCapaSprite(Transform padre, string nombreCapa, Sprite sprite, Vector3 posLocal, int sortingOrder)
+        {
+            if (sprite == null) return;
+            GameObject goCapa = new GameObject(nombreCapa);
+            goCapa.transform.SetParent(padre, false);
+            goCapa.transform.localPosition = posLocal;
+            goCapa.transform.localRotation = Quaternion.identity;
+            goCapa.transform.localScale = Vector3.one;
+
+            SpriteRenderer sr = goCapa.AddComponent<SpriteRenderer>();
+            sr.sprite = sprite;
+            sr.sortingOrder = sortingOrder;
+        }
+
+        private Texture2D CargarTexturaCC(string subRutaSinExtension)
+        {
+            if (cacheTexturasCC.TryGetValue(subRutaSinExtension, out Texture2D texCache) && texCache != null)
             {
-                Sprite resSprite = Resources.Load<Sprite>(nombreSinExt);
-                if (resSprite != null) resTex = resSprite.texture;
+                return texCache;
             }
 
-            if (resTex != null)
+            // 1. Cargar desde Resources/CustomCharacter (compatible con WebGL y Editor)
+            Texture2D tex = Resources.Load<Texture2D>("CustomCharacter/" + subRutaSinExtension);
+            if (tex != null)
             {
-                resTex.filterMode = FilterMode.Point;
-                int ancho = Mathf.Min(wFrame, resTex.width);
-                int alto = Mathf.Min(hFrame, resTex.height);
-                return Sprite.Create(resTex, new Rect(0, resTex.height - alto, ancho, alto), new Vector2(0.5f, 0f), ppu);
+                cacheTexturasCC[subRutaSinExtension] = tex;
+                return tex;
             }
 
-            // 2. Fallback de desarrollo con Application.dataPath en Editor / PC
-            try
+#if UNITY_EDITOR || UNITY_STANDALONE
+            // 2. Fallback directo desde Assets/Custom Character_Vol1/png/character/
+            string rutaArchivo = System.IO.Path.Combine(Application.dataPath, "Custom Character_Vol1/png/character", subRutaSinExtension + ".png");
+            if (System.IO.File.Exists(rutaArchivo))
             {
-                string path = System.IO.Path.Combine(Application.dataPath, rutaRelativa);
-                if (System.IO.File.Exists(path))
+                byte[] bytes = System.IO.File.ReadAllBytes(rutaArchivo);
+                Texture2D nuevaTex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+                if (ImageConversion.LoadImage(nuevaTex, bytes))
                 {
-                    byte[] bytes = System.IO.File.ReadAllBytes(path);
-                    Texture2D tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-                    if (tex.LoadImage(bytes))
-                    {
-                        tex.filterMode = FilterMode.Point; // Pixel art nítido
-                        int ancho = Mathf.Min(wFrame, tex.width);
-                        int alto = Mathf.Min(hFrame, tex.height);
-                        return Sprite.Create(tex, new Rect(0, tex.height - alto, ancho, alto), new Vector2(0.5f, 0f), ppu);
-                    }
+                    nuevaTex.filterMode = FilterMode.Bilinear;
+                    nuevaTex.wrapMode = TextureWrapMode.Clamp;
+                    cacheTexturasCC[subRutaSinExtension] = nuevaTex;
+                    return nuevaTex;
                 }
             }
-            catch (System.Exception ex)
-            {
-                Debug.LogWarning($"[Nevería] Error cargando sprite {rutaRelativa}: {ex.Message}");
-            }
+#endif
+            Debug.LogWarning($"[Neveria] No se pudo cargar textura de Custom Character Vol 1: {subRutaSinExtension}");
             return null;
+        }
+
+        private Sprite ObtenerSpriteCompletoCC(string subRutaSinExtension)
+        {
+            if (cacheSpritesCC.TryGetValue(subRutaSinExtension, out Sprite spCache) && spCache != null)
+            {
+                return spCache;
+            }
+
+            // Intentar cargar como Sprite directo desde Resources
+            Sprite spRes = Resources.Load<Sprite>("CustomCharacter/" + subRutaSinExtension);
+            if (spRes != null)
+            {
+                cacheSpritesCC[subRutaSinExtension] = spRes;
+                return spRes;
+            }
+
+            Texture2D tex = CargarTexturaCC(subRutaSinExtension);
+            if (tex == null) return null;
+
+            Sprite nuevoSp = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 100f);
+            cacheSpritesCC[subRutaSinExtension] = nuevoSp;
+            return nuevoSp;
+        }
+
+        private Sprite ObtenerSubSpriteCC(string subRutaSinExtension, Rect rectSubSprite)
+        {
+            string clave = $"{subRutaSinExtension}_{rectSubSprite.x}_{rectSubSprite.y}_{rectSubSprite.width}_{rectSubSprite.height}";
+            if (cacheSpritesCC.TryGetValue(clave, out Sprite spCache) && spCache != null)
+            {
+                return spCache;
+            }
+
+            Texture2D tex = CargarTexturaCC(subRutaSinExtension);
+            if (tex == null) return null;
+
+            Sprite subSp = Sprite.Create(tex, rectSubSprite, new Vector2(0.5f, 0.5f), 100f);
+            cacheSpritesCC[clave] = subSp;
+            return subSp;
         }
 
         private void AjustarFondoACamara()
@@ -274,7 +447,8 @@ namespace CaminosDeGuanajuato.Nieves
 
             TipoRecipiente rec = UnityEngine.Random.value > 0.5f ? TipoRecipiente.BarquilloCrujiente : TipoRecipiente.VasoDeBarro;
             SaborNieve sabor = (SaborNieve)UnityEngine.Random.Range(1, 6);
-            string nombre = nombresComensales[UnityEngine.Random.Range(0, nombresComensales.Count)];
+            int idxCliente = (clientesAtendidos + clientesPerdidos) % nombresComensales.Count;
+            string nombre = nombresComensales[idxCliente];
 
             float pacienciaBase = Mathf.Max(26f, 36f - (clientesAtendidos * 0.8f));
             PedidoNieve nuevoPedido = new PedidoNieve(rec, sabor, nombre, pacienciaBase);
@@ -282,14 +456,14 @@ namespace CaminosDeGuanajuato.Nieves
             GameObject go = new GameObject($"Cliente_{nombre}");
             go.transform.position = puntoSpawnCliente;
 
-            Sprite spriteElegido = null;
-            if (spritesComensales.Count > 0)
+            if (catalogoVariantesCC.Count > 0)
             {
-                spriteElegido = spritesComensales[UnityEngine.Random.Range(0, spritesComensales.Count)];
+                ConfiguracionPersonajeCC configElegida = catalogoVariantesCC[(clientesAtendidos + clientesPerdidos) % catalogoVariantesCC.Count];
+                EnsamblarPersonajeCustomVol1(go, configElegida, ordenBase: 10);
             }
 
             clienteActual = go.AddComponent<ClienteTurista>();
-            clienteActual.Configurar(nuevoPedido, puntoMostradorCliente, puntoSalidaCliente, spriteElegido);
+            clienteActual.Configurar(nuevoPedido, puntoMostradorCliente, puntoSalidaCliente, escalaPersonaje: 0.135f);
             clienteActual.OnPacienciaAgotada += ManejarClientePerdido;
             ultimoErrorEntrega = null;
 

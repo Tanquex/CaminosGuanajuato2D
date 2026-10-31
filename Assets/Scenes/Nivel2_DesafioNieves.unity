@@ -375,9 +375,9 @@ MonoBehaviour:
   clientesObjetivo: 8
   maxClientesPerdidos: 3
   duracionJornada: 100
-  puntoSpawnCliente: {x: -8, y: -1.5, z: 0}
-  puntoMostradorCliente: {x: -2.2, y: -1.5, z: 0}
-  puntoSalidaCliente: {x: 8, y: -1.5, z: 0}
+  puntoSpawnCliente: {x: 7.2, y: -2.25, z: 0}
+  puntoMostradorCliente: {x: 1.15, y: -2.25, z: 0}
+  puntoSalidaCliente: {x: 7.8, y: -2.25, z: 0}
 --- !u!114 &300013
 MonoBehaviour:
   m_ObjectHideFlags: 0

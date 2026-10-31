@@ -45,8 +45,6 @@ namespace CaminosDeGuanajuato.Overworld
                 return;
             }
             Instance = this;
-
-            ColonialUIHelper.AsegurarInicializacion();
             CrearTexturasMapa();
 
             if (ProgresoJuegoManager.Instance == null)
@@ -59,7 +57,6 @@ namespace CaminosDeGuanajuato.Overworld
         private void Start()
         {
             Time.timeScale = 1f;
-            ColonialUIHelper.AsegurarInicializacion();
             CrearTexturasMapa();
             AsegurarFondoMapa();
             AjustarFondoCamara();
@@ -212,7 +209,7 @@ namespace CaminosDeGuanajuato.Overworld
 
             if (estiloTituloBarra != null) return;
 
-            estiloTituloBarra = new GUIStyle(GUI.skin.label)
+            estiloTituloBarra = new GUIStyle
             {
                 fontSize = 15,
                 fontStyle = FontStyle.Bold,
@@ -221,7 +218,7 @@ namespace CaminosDeGuanajuato.Overworld
             };
             estiloTituloBarra.normal.textColor = new Color(0.99f, 0.84f, 0.32f);
 
-            estiloSubtituloBarra = new GUIStyle(GUI.skin.label)
+            estiloSubtituloBarra = new GUIStyle
             {
                 fontSize = 11,
                 fontStyle = FontStyle.Italic,
@@ -230,7 +227,7 @@ namespace CaminosDeGuanajuato.Overworld
             };
             estiloSubtituloBarra.normal.textColor = new Color(0.92f, 0.86f, 0.74f);
 
-            estiloEtiquetaPin = new GUIStyle(GUI.skin.label)
+            estiloEtiquetaPin = new GUIStyle
             {
                 fontSize = 11,
                 fontStyle = FontStyle.Bold,
@@ -239,7 +236,7 @@ namespace CaminosDeGuanajuato.Overworld
             };
             estiloEtiquetaPin.normal.textColor = new Color(1.0f, 0.92f, 0.68f);
 
-            estiloTituloDock = new GUIStyle(GUI.skin.label)
+            estiloTituloDock = new GUIStyle
             {
                 fontSize = 13,
                 fontStyle = FontStyle.Bold,

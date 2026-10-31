@@ -36,7 +36,9 @@ namespace CaminosDeGuanajuato.Core
                 return;
             }
             Instance = this;
-            if (transform.parent == null)
+            // Solo marcar DontDestroyOnLoad si es un objeto raíz dedicado exclusivamente a ProgresoJuegoManager.
+            // Si comparte GameObject con managers de escena (como NeveriaManagerCore), NO preservar el GameObject entero.
+            if (transform.parent == null && GetComponents<MonoBehaviour>().Length <= 1)
             {
                 DontDestroyOnLoad(gameObject);
             }
