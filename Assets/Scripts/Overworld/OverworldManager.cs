@@ -1,16 +1,15 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using CaminosDeGuanajuato.Core;
+using CaminosDeGuanajuato.UI;
 
 namespace CaminosDeGuanajuato.Overworld
 {
     /// <summary>
-    /// Controlador de la Pantalla del Overworld (Mapa Interactivo del Estado de Guanajuato).
-    /// Basado en la sección 2.3 del GDD de Caminos de Guanajuato 2D:
-    /// - Muestra la cartografía estilizada del estado.
-    /// - Nodo Dolores Hidalgo C.I.N.: Siempre activo, abre el selector de sus 3 misiones.
-    /// - Nodo San Felipe: Bloqueado en gris con ícono de candado hasta completar 3/3 misiones en Dolores.
-    /// - Permite viajar a San Felipe una vez obtenido el Salvoconducto Insurgente.
+    /// Controlador del Mapa Regional Interactivo del Estado de Guanajuato (Overworld).
+    /// Diseñado para respetar el arte cartográfico original (cartela histórica superior izquierda,
+    /// rosa de los vientos y simbología inferior izquierda), ofreciendo marcadores limpios sobre
+    /// los pueblos y un panel inferior rápido e intuitivo con acceso directo a las misiones.
     /// </summary>
     public class OverworldManager : MonoBehaviour
     {
@@ -26,27 +25,17 @@ namespace CaminosDeGuanajuato.Overworld
         [Header("Fondo Cartográfico")]
         [SerializeField] private SpriteRenderer fondoMapaRenderer;
 
-        // Estilos OnGUI
-        private GUIStyle estiloTitulo;
-        private GUIStyle estiloSubtitulo;
-        private GUIStyle estiloCajaInfo;
-        private GUIStyle estiloBotonNodoDolores;
-        private GUIStyle estiloBotonNodoSanFelipe;
-        private GUIStyle estiloBotonNodoBloqueado;
-        private GUIStyle estiloBotonVolver;
-        private GUIStyle estiloBarraProgresoTexto;
+        private GUIStyle estiloTituloBarra;
+        private GUIStyle estiloSubtituloBarra;
+        private GUIStyle estiloEtiquetaPin;
+        private GUIStyle estiloTituloDock;
 
-        private Texture2D texFondoCaja;
-        private Texture2D texFondoDolores;
-        private Texture2D texFondoSanFelipe;
-        private Texture2D texFondoBloqueado;
-        private Texture2D texBarraFondo;
-        private Texture2D texBarraRelleno;
+        private Texture2D texPuntoCaminoOro;
+        private Texture2D texPuntoCaminoGris;
+        private Texture2D texFondoMapa;
 
         private bool mostrarAvisoBloqueoSanFelipe = false;
         private float temporizadorAviso = 0f;
-
-        private Texture2D texFondoMapa;
 
         private void Awake()
         {
@@ -56,9 +45,10 @@ namespace CaminosDeGuanajuato.Overworld
                 return;
             }
             Instance = this;
-            CrearTexturas();
 
-            // Asegurar que exista el ProgresoJuegoManager en escena
+            ColonialUIHelper.AsegurarInicializacion();
+            CrearTexturasMapa();
+
             if (ProgresoJuegoManager.Instance == null)
             {
                 GameObject pgo = new GameObject("ProgresoJuegoManager");
@@ -69,11 +59,11 @@ namespace CaminosDeGuanajuato.Overworld
         private void Start()
         {
             Time.timeScale = 1f;
-            CrearTexturas();
+            ColonialUIHelper.AsegurarInicializacion();
+            CrearTexturasMapa();
             AsegurarFondoMapa();
             AjustarFondoCamara();
 
-            // Iniciar mostrando directamente el mapa regional con los nodos de Dolores y San Felipe
             if (selectorMisionesDolores != null)
             {
                 selectorMisionesDolores.Cerrar();
@@ -99,7 +89,6 @@ namespace CaminosDeGuanajuato.Overworld
         {
             string nombreSinExt = System.IO.Path.GetFileNameWithoutExtension(rutaRelativa);
 
-            // 1. Intentar cargar desde Resources (100% compatible con WebGL / itch.io)
             Sprite resSprite = Resources.Load<Sprite>(nombreSinExt);
             if (resSprite != null) return resSprite;
 
@@ -109,7 +98,6 @@ namespace CaminosDeGuanajuato.Overworld
                 return Sprite.Create(resTex, new Rect(0, 0, resTex.width, resTex.height), new Vector2(0.5f, 0.5f), ppu);
             }
 
-            // 2. Fallback de desarrollo con Application.dataPath en Editor / PC
             try
             {
                 string ruta = System.IO.Path.Combine(Application.dataPath, rutaRelativa);
@@ -147,6 +135,10 @@ namespace CaminosDeGuanajuato.Overworld
                 {
                     selectorMisionesDolores.Cerrar();
                 }
+                else if (mostrarAvisoBloqueoSanFelipe)
+                {
+                    mostrarAvisoBloqueoSanFelipe = false;
+                }
                 else
                 {
                     VolverAlMenu();
@@ -171,35 +163,22 @@ namespace CaminosDeGuanajuato.Overworld
             fondoMapaRenderer.transform.position = new Vector3(cam.transform.position.x, cam.transform.position.y, 0f);
         }
 
-        private void CrearTexturas()
+        private void CrearTexturasMapa()
         {
-            if (texFondoCaja != null && texBarraRelleno != null) return;
+            if (texPuntoCaminoOro == null)
+            {
+                texPuntoCaminoOro = new Texture2D(1, 1);
+                texPuntoCaminoOro.SetPixel(0, 0, new Color(1.0f, 0.84f, 0.25f, 0.95f));
+                texPuntoCaminoOro.Apply();
+            }
 
-            texFondoCaja = new Texture2D(1, 1);
-            texFondoCaja.SetPixel(0, 0, new Color(0.12f, 0.08f, 0.05f, 0.94f));
-            texFondoCaja.Apply();
+            if (texPuntoCaminoGris == null)
+            {
+                texPuntoCaminoGris = new Texture2D(1, 1);
+                texPuntoCaminoGris.SetPixel(0, 0, new Color(0.32f, 0.22f, 0.14f, 0.80f));
+                texPuntoCaminoGris.Apply();
+            }
 
-            texFondoDolores = new Texture2D(1, 1);
-            texFondoDolores.SetPixel(0, 0, new Color(0.12f, 0.35f, 0.65f, 0.95f)); // Azul Talavera vibrante
-            texFondoDolores.Apply();
-
-            texFondoSanFelipe = new Texture2D(1, 1);
-            texFondoSanFelipe.SetPixel(0, 0, new Color(0.15f, 0.55f, 0.25f, 0.95f)); // Verde esmeralda colonial
-            texFondoSanFelipe.Apply();
-
-            texFondoBloqueado = new Texture2D(1, 1);
-            texFondoBloqueado.SetPixel(0, 0, new Color(0.25f, 0.25f, 0.88f, 0.88f)); // Gris sombreado
-            texFondoBloqueado.Apply();
-
-            texBarraFondo = new Texture2D(1, 1);
-            texBarraFondo.SetPixel(0, 0, new Color(0.2f, 0.2f, 0.2f, 1f));
-            texBarraFondo.Apply();
-
-            texBarraRelleno = new Texture2D(1, 1);
-            texBarraRelleno.SetPixel(0, 0, new Color(0.98f, 0.75f, 0.18f, 1f)); // Dorado
-            texBarraRelleno.Apply();
-
-            // Cargar imagen de mapa para renderizado directo en OnGUI (compatible con WebGL)
             if (texFondoMapa == null)
             {
                 texFondoMapa = Resources.Load<Texture2D>("Overworld_Mapa_Guanajuato");
@@ -228,249 +207,331 @@ namespace CaminosDeGuanajuato.Overworld
 
         private void InicializarEstilos()
         {
-            if (texFondoCaja == null || texBarraRelleno == null)
+            ColonialUIHelper.AsegurarInicializacion();
+            CrearTexturasMapa();
+
+            if (estiloTituloBarra != null) return;
+
+            estiloTituloBarra = new GUIStyle(GUI.skin.label)
             {
-                CrearTexturas();
-            }
+                fontSize = 15,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+                richText = true
+            };
+            estiloTituloBarra.normal.textColor = new Color(0.99f, 0.84f, 0.32f);
 
-            if (estiloTitulo != null) return;
+            estiloSubtituloBarra = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 11,
+                fontStyle = FontStyle.Italic,
+                alignment = TextAnchor.MiddleCenter,
+                richText = true
+            };
+            estiloSubtituloBarra.normal.textColor = new Color(0.92f, 0.86f, 0.74f);
 
-            estiloTitulo = new GUIStyle(GUI.skin.label);
-            estiloTitulo.fontSize = 24;
-            estiloTitulo.fontStyle = FontStyle.Bold;
-            estiloTitulo.alignment = TextAnchor.MiddleCenter;
-            estiloTitulo.normal.textColor = new Color(0.98f, 0.78f, 0.22f); // Dorado virreinal
+            estiloEtiquetaPin = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 11,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+                richText = true
+            };
+            estiloEtiquetaPin.normal.textColor = new Color(1.0f, 0.92f, 0.68f);
 
-            estiloSubtitulo = new GUIStyle(GUI.skin.label);
-            estiloSubtitulo.fontSize = 14;
-            estiloSubtitulo.fontStyle = FontStyle.Italic;
-            estiloSubtitulo.alignment = TextAnchor.MiddleCenter;
-            estiloSubtitulo.normal.textColor = new Color(0.88f, 0.88f, 0.88f);
-
-            estiloCajaInfo = new GUIStyle(GUI.skin.box);
-            estiloCajaInfo.normal.background = texFondoCaja;
-
-            estiloBotonNodoDolores = new GUIStyle(GUI.skin.button);
-            estiloBotonNodoDolores.fontSize = 16;
-            estiloBotonNodoDolores.fontStyle = FontStyle.Bold;
-            estiloBotonNodoDolores.normal.background = texFondoDolores;
-            estiloBotonNodoDolores.normal.textColor = Color.white;
-            estiloBotonNodoDolores.alignment = TextAnchor.MiddleCenter;
-
-            estiloBotonNodoSanFelipe = new GUIStyle(GUI.skin.button);
-            estiloBotonNodoSanFelipe.fontSize = 16;
-            estiloBotonNodoSanFelipe.fontStyle = FontStyle.Bold;
-            estiloBotonNodoSanFelipe.normal.background = texFondoSanFelipe;
-            estiloBotonNodoSanFelipe.normal.textColor = Color.white;
-            estiloBotonNodoSanFelipe.alignment = TextAnchor.MiddleCenter;
-
-            estiloBotonNodoBloqueado = new GUIStyle(GUI.skin.button);
-            estiloBotonNodoBloqueado.fontSize = 14;
-            estiloBotonNodoBloqueado.fontStyle = FontStyle.Bold;
-            estiloBotonNodoBloqueado.normal.background = texFondoBloqueado;
-            estiloBotonNodoBloqueado.normal.textColor = new Color(0.7f, 0.7f, 0.7f);
-            estiloBotonNodoBloqueado.alignment = TextAnchor.MiddleCenter;
-
-            estiloBotonVolver = new GUIStyle(GUI.skin.button);
-            estiloBotonVolver.fontSize = 13;
-            estiloBotonVolver.fontStyle = FontStyle.Bold;
-            estiloBotonVolver.normal.textColor = Color.white;
-
-            estiloBarraProgresoTexto = new GUIStyle(GUI.skin.label);
-            estiloBarraProgresoTexto.fontSize = 12;
-            estiloBarraProgresoTexto.alignment = TextAnchor.MiddleCenter;
-            estiloBarraProgresoTexto.normal.textColor = Color.white;
+            estiloTituloDock = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 13,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleLeft,
+                richText = true
+            };
+            estiloTituloDock.normal.textColor = new Color(0.99f, 0.84f, 0.30f);
         }
 
         private void OnGUI()
         {
             InicializarEstilos();
 
-            // Dibujar fondo de mapa siempre si está disponible (evita cualquier pantalla café o vacía)
             if (texFondoMapa != null)
             {
                 GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), texFondoMapa, ScaleMode.ScaleAndCrop);
             }
 
-            // Si el selector de misiones de Dolores está abierto, darle prioridad
             if (selectorMisionesDolores != null && selectorMisionesDolores.EstaAbierto)
             {
                 selectorMisionesDolores.DibujarGUI();
                 return;
             }
 
-            // 1. Cabecera del Overworld
-            DibujarCabeceraOverworld();
+            // 1. Barra superior compacta a la derecha de la cartela histórica (no tapa el pergamino izquierdo)
+            DibujarBarraSuperiorCompacta();
 
-            // 2. Nodos Municipales en el Mapa
-            DibujarNodosMunicipales();
+            // 2. Marcadores interactivos limpios sobre Dolores Hidalgo y San Felipe
+            DibujarMarcadoresMapa();
 
-            // 3. Panel Inferior de Progreso y Navegación
-            DibujarPanelInferior();
+            // 3. Panel rápido de misiones en la parte inferior derecha (no tapa la leyenda de la izquierda)
+            DibujarDockMisionesDolores();
 
-            // 4. Modal de Aviso de Bloqueo
+            // 4. Aviso de camino custodiado a San Felipe
             if (mostrarAvisoBloqueoSanFelipe)
             {
                 DibujarModalAvisoBloqueo();
             }
         }
 
-        private void DibujarCabeceraOverworld()
+        private void DibujarBarraSuperiorCompacta()
         {
-            float ancho = Mathf.Min(700, Screen.width - 40);
-            float alto = 75;
-            float x = (Screen.width - ancho) * 0.5f;
-            float y = 18;
+            int completadas = ObtenerTotalCompletadas();
 
-            GUILayout.BeginArea(new Rect(x, y, ancho, alto), estiloCajaInfo);
-            GUILayout.Space(6);
-            GUILayout.Label("🗺️ CAMINOS DE GUANAJUATO: MAPA REGIONAL", estiloTitulo);
-            GUILayout.Label("Selecciona un municipio para ver sus misiones y tradiciones culturales", estiloSubtitulo);
-            GUILayout.EndArea();
-        }
+            float xInicio = Mathf.Max(305f, Screen.width * 0.32f);
+            float margenDer = Mathf.Max(28f, Screen.width * 0.042f);
+            float ancho = Screen.width - xInicio - margenDer;
+            float alto = 48f;
+            float y = Mathf.Max(20f, Screen.height * 0.042f);
 
-        private void DibujarNodosMunicipales()
-        {
-            int completadasDolores = ProgresoJuegoManager.Instance != null 
-                ? ProgresoJuegoManager.Instance.ObtenerTotalCompletadasDolores() 
-                : PlayerPrefs.GetInt(ProgresoJuegoManager.KEY_MISION1, 0) + PlayerPrefs.GetInt(ProgresoJuegoManager.KEY_MISION2, 0);
+            Rect rBarra = new Rect(xInicio, y, ancho, alto);
+            ColonialUIHelper.DibujarTarjetaInterior(rBarra);
 
-            bool sanFelipeDesbloqueado = completadasDolores >= 3;
-
-            // Nodo 1: DOLORES HIDALGO C.I.N. (Centro / Cuna de la Libertad)
-            float xDolores = Screen.width * 0.50f;
-            float yDolores = Screen.height * 0.58f;
-            float wNodo = 250f;
-            float hNodo = 90f;
-
-            GUILayout.BeginArea(new Rect(xDolores - wNodo * 0.5f, yDolores - hNodo * 0.5f, wNodo, hNodo), estiloCajaInfo);
-            GUILayout.Space(4);
-            if (GUILayout.Button($"🔔 DOLORES HIDALGO C.I.N.\n({completadasDolores}/3 Misiones Resueltas)", estiloBotonNodoDolores, GUILayout.Height(58)))
+            // Botón Menú Principal a la izquierda de la barra
+            Rect rBtnMenu = new Rect(rBarra.x + 8f, rBarra.y + 7f, 112f, 34f);
+            if (ColonialUIHelper.BotonColonial(rBtnMenu, "⬅ MENÚ", ColonialUIHelper.VarianteBoton.Madera, 12))
             {
-                AbrirMisionesDolores();
-            }
-            GUILayout.Label("⭐ Cuna de la Independencia", estiloSubtitulo);
-            GUILayout.EndArea();
-
-            // Nodo 2: SAN FELIPE (Norte / Torres Mochas)
-            float xSanFelipe = Screen.width * 0.60f;
-            float ySanFelipe = Screen.height * 0.28f;
-
-            GUILayout.BeginArea(new Rect(xSanFelipe - wNodo * 0.5f, ySanFelipe - hNodo * 0.5f, wNodo, hNodo), estiloCajaInfo);
-            GUILayout.Space(4);
-
-            if (sanFelipeDesbloqueado)
-            {
-                if (GUILayout.Button("🌾 SAN FELIPE\n(¡Camino Norte Abierto!)", estiloBotonNodoSanFelipe, GUILayout.Height(62)))
-                {
-                    if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
-                    ViajarASanFelipe();
-                }
-                GUILayout.Label("✨ Salvoconducto Obtenido", estiloSubtitulo);
-            }
-            else
-            {
-                if (GUILayout.Button($"🔒 SAN FELIPE\n({completadasDolores}/3 Misiones Requeridas)", estiloBotonNodoBloqueado, GUILayout.Height(62)))
-                {
-                    if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
-                    mostrarAvisoBloqueoSanFelipe = true;
-                    temporizadorAviso = 4.0f;
-                }
-                GUILayout.Label("Camino intermunicipal cerrado", estiloSubtitulo);
-            }
-
-            GUILayout.EndArea();
-
-            // Trazado de conexión entre Dolores y San Felipe
-            DibujarCaminoIntermunicipal(new Vector2(xDolores + 130, yDolores), new Vector2(xSanFelipe - 130, ySanFelipe), sanFelipeDesbloqueado);
-        }
-
-        private void DibujarCaminoIntermunicipal(Vector2 inicio, Vector2 fin, bool abierto)
-        {
-            Color colorRuta = abierto ? new Color(0.98f, 0.8f, 0.2f, 0.9f) : new Color(0.45f, 0.45f, 0.45f, 0.6f);
-            Color previo = GUI.color;
-            GUI.color = colorRuta;
-
-            // Dibuja una línea punteada estilizada con pequeños rectángulos
-            int puntos = 12;
-            for (int i = 0; i <= puntos; i++)
-            {
-                float t = (float)i / puntos;
-                Vector2 pos = Vector2.Lerp(inicio, fin, t);
-                GUI.DrawTexture(new Rect(pos.x - 3, pos.y - 3, 7, 7), texBarraRelleno);
-            }
-
-            GUI.color = previo;
-        }
-
-        private void DibujarPanelInferior()
-        {
-            float w = Screen.width - 40;
-            float h = 60;
-            float x = 20;
-            float y = Screen.height - h - 15;
-
-            GUILayout.BeginArea(new Rect(x, y, w, h), estiloCajaInfo);
-            GUILayout.BeginHorizontal();
-
-            if (GUILayout.Button("⬅ VOLVER AL MENÚ", estiloBotonVolver, GUILayout.Width(180), GUILayout.Height(38)))
-            {
-                if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
                 VolverAlMenu();
             }
 
-            GUILayout.Space(12);
-
-            if (GUILayout.Button("🍨 JUGAR NIVEL 2: NIEVES", estiloBotonNodoDolores, GUILayout.Width(240), GUILayout.Height(38)))
+            // Medalla de progreso a la derecha de la barra
+            float wProgreso = 138f;
+            Rect rBadge = new Rect(rBarra.xMax - wProgreso - 8f, rBarra.y + 7f, wProgreso, 34f);
+            if (ColonialUIHelper.BotonColonial(
+                rBadge,
+                $"⭐ {completadas}/3 MISIONES",
+                completadas >= 3 ? ColonialUIHelper.VarianteBoton.Verde : ColonialUIHelper.VarianteBoton.Talavera,
+                12))
             {
-                if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
+                AbrirMisionesDolores();
+            }
+
+            // Título central
+            float xCentro = rBtnMenu.xMax + 6f;
+            float wCentro = Mathf.Max(120f, rBadge.x - xCentro - 6f);
+            ColonialUIHelper.DibujarTextoConSombra(
+                new Rect(xCentro, rBarra.y + 4f, wCentro, 22f),
+                "🗺️ RUTA DE LA LIBERTAD (1810)",
+                estiloTituloBarra
+            );
+            GUI.Label(
+                new Rect(xCentro, rBarra.y + 24f, wCentro, 18f),
+                "Haz clic en un pueblo o selecciona una misión abajo",
+                estiloSubtituloBarra
+            );
+        }
+
+        private void DibujarMarcadoresMapa()
+        {
+            int completadas = ObtenerTotalCompletadas();
+            bool sanFelipeDesbloqueado = completadas >= 3;
+
+            // Coordenadas alineadas con los pueblos ilustrados en Overworld_Mapa_Guanajuato.jpg
+            Vector2 posDolores = new Vector2(Screen.width * 0.515f, Screen.height * 0.505f);
+            Vector2 posSanFelipe = new Vector2(Screen.width * 0.555f, Screen.height * 0.215f);
+
+            // Trazado del Camino Real Norte entre Dolores Hidalgo y San Felipe
+            DibujarCaminoReal(
+                new Vector2(posDolores.x, posDolores.y - 26f),
+                new Vector2(posSanFelipe.x, posSanFelipe.y + 26f),
+                sanFelipeDesbloqueado
+            );
+
+            // PIN 1: SAN FELIPE (Norte)
+            float wPinSF = 206f;
+            float hPinSF = 48f;
+            Rect rPinSF = new Rect(posSanFelipe.x - wPinSF * 0.5f, posSanFelipe.y - hPinSF * 0.5f, wPinSF, hPinSF);
+
+            if (sanFelipeDesbloqueado)
+            {
+                if (ColonialUIHelper.BotonColonial(
+                    rPinSF,
+                    "🌾 SAN FELIPE (NORTE)\n✨ ¡Camino Real Abierto!",
+                    ColonialUIHelper.VarianteBoton.Verde,
+                    12))
+                {
+                    ViajarASanFelipe();
+                }
+            }
+            else
+            {
+                if (ColonialUIHelper.BotonColonial(
+                    rPinSF,
+                    $"🔒 SAN FELIPE (NORTE)\nRequiere 3/3 en Dolores ({completadas}/3)",
+                    ColonialUIHelper.VarianteBoton.Madera,
+                    11))
+                {
+                    mostrarAvisoBloqueoSanFelipe = true;
+                    temporizadorAviso = 4.5f;
+                }
+            }
+
+            // PIN 2: DOLORES HIDALGO C.I.N. (Justo debajo de la Parroquia con la bandera)
+            float wPinDolores = 224f;
+            float hPinDolores = 52f;
+            Rect rPinDolores = new Rect(posDolores.x - wPinDolores * 0.5f, posDolores.y - hPinDolores * 0.5f, wPinDolores, hPinDolores);
+
+            if (ColonialUIHelper.BotonColonial(
+                rPinDolores,
+                $"🏛️ DOLORES HIDALGO C.I.N.\n⭐ {completadas}/3 Misiones • [ Ver Tablero ]",
+                ColonialUIHelper.VarianteBoton.Talavera,
+                12))
+            {
+                AbrirMisionesDolores();
+            }
+        }
+
+        private void DibujarCaminoReal(Vector2 inicio, Vector2 fin, bool abierto)
+        {
+            int pasos = 11;
+            for (int i = 1; i < pasos; i++)
+            {
+                float t = (float)i / pasos;
+                Vector2 p = Vector2.Lerp(inicio, fin, t);
+                // Curva sutil siguiendo el trazo del mapa
+                p.x += Mathf.Sin(t * Mathf.PI) * -10f;
+
+                GUI.DrawTexture(new Rect(p.x - 4f, p.y - 4f, 8f, 8f), texPuntoCaminoGris);
+                if (abierto)
+                {
+                    GUI.DrawTexture(new Rect(p.x - 3f, p.y - 3f, 6f, 6f), texPuntoCaminoOro);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Panel inferior derecho amigable: muestra directamente las 3 misiones de Dolores Hidalgo
+        /// con botones de 1 clic para que el jugador nunca se pierda, dejando libre el cuadro
+        /// de simbología ("PUEBLOS / CAMINOS REALES") de la esquina inferior izquierda.
+        /// </summary>
+        private void DibujarDockMisionesDolores()
+        {
+            bool m1Hecha = ProgresoJuegoManager.Instance != null && ProgresoJuegoManager.Instance.EstaMisionCompletada(TipoMision.Dolores_TowerDefense);
+            bool m2Hecha = ProgresoJuegoManager.Instance != null && ProgresoJuegoManager.Instance.EstaMisionCompletada(TipoMision.Dolores_Nieves);
+            bool m3Hecha = ProgresoJuegoManager.Instance != null && ProgresoJuegoManager.Instance.EstaMisionCompletada(TipoMision.Dolores_Duelo);
+
+            float xInicio = Mathf.Max(245f, Screen.width * 0.255f);
+            float margenDer = Mathf.Max(28f, Screen.width * 0.042f);
+            float ancho = Screen.width - xInicio - margenDer;
+            float alto = 96f;
+            float y = Screen.height - alto - Mathf.Max(20f, Screen.height * 0.042f);
+
+            Rect rDock = new Rect(xInicio, y, ancho, alto);
+            ColonialUIHelper.DibujarTarjetaInterior(rDock);
+
+            // Cabecera del Dock
+            GUI.Label(
+                new Rect(rDock.x + 12f, rDock.y + 6f, rDock.width - 170f, 22f),
+                "📜 MISIONES DE DOLORES HIDALGO — Acceso Directo:",
+                estiloTituloDock
+            );
+
+            Rect rBtnDetalles = new Rect(rDock.xMax - 150f, rDock.y + 6f, 140f, 24f);
+            if (ColonialUIHelper.BotonColonial(rBtnDetalles, "📋 Ver Detalles", ColonialUIHelper.VarianteBoton.Madera, 11))
+            {
+                AbrirMisionesDolores();
+            }
+
+            ColonialUIHelper.DibujarSeparador(rDock.x + 10f, rDock.y + 33f, rDock.width - 20f);
+
+            // 3 Botones directos para las 3 misiones
+            float padX = 10f;
+            float gap = 8f;
+            float wDisp = rDock.width - padX * 2f;
+            float wBoton = (wDisp - gap * 2f) / 3f;
+            float yBoton = rDock.y + 40f;
+            float hBoton = 48f;
+
+            // Botón Misión 1: Defensa del Atrio
+            string txtM1 = m1Hecha
+                ? "⭐ 1. DEFENSA DEL ATRIO\n[ Completada • Repetir ]"
+                : "⚔ 1. DEFENSA DEL ATRIO\n[ ▶ Jugar Nivel 1 ]";
+            if (ColonialUIHelper.BotonColonial(
+                new Rect(rDock.x + padX, yBoton, wBoton, hBoton),
+                txtM1,
+                m1Hecha ? ColonialUIHelper.VarianteBoton.Dorado : ColonialUIHelper.VarianteBoton.Verde,
+                11))
+            {
+                Time.timeScale = 1f;
+                SceneManager.LoadScene("NivelPruebas_Defensa");
+            }
+
+            // Botón Misión 2: Puesto de Nieves
+            string txtM2 = m2Hecha
+                ? "⭐ 2. PUESTO DE NIEVES\n[ Completada • Repetir ]"
+                : "🍨 2. PUESTO DE NIEVES\n[ ▶ Jugar Nivel 2 ]";
+            if (ColonialUIHelper.BotonColonial(
+                new Rect(rDock.x + padX + wBoton + gap, yBoton, wBoton, hBoton),
+                txtM2,
+                m2Hecha ? ColonialUIHelper.VarianteBoton.Dorado : ColonialUIHelper.VarianteBoton.Verde,
+                11))
+            {
                 Time.timeScale = 1f;
                 SceneManager.LoadScene("Nivel2_DesafioNieves");
             }
 
-            GUILayout.FlexibleSpace();
-
-            int comp = ProgresoJuegoManager.Instance != null ? ProgresoJuegoManager.Instance.ObtenerTotalCompletadasDolores() : 0;
-            GUILayout.Label($"Progreso: {comp}/3 Misiones", estiloSubtitulo);
-
-            GUILayout.Space(20);
-
-            // Barra de progreso visual
-            Rect rBarra = GUILayoutUtility.GetRect(180, 20);
-            GUI.DrawTexture(rBarra, texBarraFondo);
-            float pct = Mathf.Clamp01((float)comp / 3f);
-            GUI.DrawTexture(new Rect(rBarra.x, rBarra.y, rBarra.width * pct, rBarra.height), texBarraRelleno);
-            GUI.Label(rBarra, $"{Mathf.RoundToInt(pct * 100)}%", estiloBarraProgresoTexto);
-
-            GUILayout.EndHorizontal();
-            GUILayout.EndArea();
+            // Botón Misión 3: Duelo en la Plaza
+            bool m3Desbloqueada = m1Hecha || m2Hecha;
+            string txtM3 = m3Hecha
+                ? "⭐ 3. DUELO EN LA PLAZA\n[ Completada ]"
+                : (m3Desbloqueada
+                    ? "📜 3. DUELO EN LA PLAZA\n[ Ver en Tablero ]"
+                    : "🔒 3. DUELO EN LA PLAZA\n[ Supera Misión 1 o 2 ]");
+            if (ColonialUIHelper.BotonColonial(
+                new Rect(rDock.x + padX + (wBoton + gap) * 2f, yBoton, wBoton, hBoton),
+                txtM3,
+                m3Desbloqueada ? ColonialUIHelper.VarianteBoton.Talavera : ColonialUIHelper.VarianteBoton.Gris,
+                11))
+            {
+                AbrirMisionesDolores();
+            }
         }
 
         private void DibujarModalAvisoBloqueo()
         {
-            float w = 480;
-            float h = 180;
-            float x = (Screen.width - w) * 0.5f;
-            float y = (Screen.height - h) * 0.5f;
+            ColonialUIHelper.DibujarOverlayOscuro();
 
-            GUILayout.BeginArea(new Rect(x, y, w, h), estiloCajaInfo);
-            GUILayout.Space(12);
-            GUILayout.Label("🔒 CAMINO A SAN FELIPE CUSTODIADO", estiloTitulo);
-            GUILayout.Space(6);
-            GUILayout.Label("Los arrieros y las guardias reales custodian el camino norte.\nDebes demostrar valor y resolver las 3 misiones de Dolores Hidalgo\npara que el comité del pueblo te otorgue el Salvoconducto Insurgente.", estiloSubtitulo);
-            GUILayout.Space(12);
+            float w = Mathf.Min(460f, Screen.width - 32f);
+            float h = 210f;
+            Rect rModal = new Rect((Screen.width - w) * 0.5f, (Screen.height - h) * 0.5f, w, h);
 
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button("ENTENDIDO", estiloBotonVolver, GUILayout.Width(140), GUILayout.Height(32)))
+            ColonialUIHelper.DibujarMarcoVentana(
+                rModal,
+                "🔒 CAMINO A SAN FELIPE CUSTODIADO",
+                "Ruta Norte de los Caminos de Guanajuato"
+            );
+
+            GUI.Label(
+                new Rect(rModal.x + 22f, rModal.y + 78f, rModal.width - 44f, 68f),
+                "Las guardias reales vigilan el paso hacia <b>San Felipe (Torres Mochas)</b>.\nCompleta las <b>3 misiones de Dolores Hidalgo</b> para que el comité insurgente te entregue el Salvoconducto.",
+                estiloSubtituloBarra
+            );
+
+            float wBtn = 190f;
+            float hBtn = 36f;
+            Rect rBtn = new Rect(rModal.x + (rModal.width - wBtn) * 0.5f, rModal.yMax - hBtn - 16f, wBtn, hBtn);
+            if (ColonialUIHelper.BotonColonial(rBtn, "🏛️ VER MISIONES", ColonialUIHelper.VarianteBoton.Dorado, 13))
             {
-                if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
                 mostrarAvisoBloqueoSanFelipe = false;
+                AbrirMisionesDolores();
             }
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
+        }
 
-            GUILayout.EndArea();
+        private int ObtenerTotalCompletadas()
+        {
+            if (ProgresoJuegoManager.Instance != null)
+            {
+                return ProgresoJuegoManager.Instance.ObtenerTotalCompletadasDolores();
+            }
+            return PlayerPrefs.GetInt(ProgresoJuegoManager.KEY_MISION1, 0)
+                 + PlayerPrefs.GetInt(ProgresoJuegoManager.KEY_MISION2, 0)
+                 + PlayerPrefs.GetInt(ProgresoJuegoManager.KEY_MISION3, 0);
         }
 
         public void AbrirMisionesDolores()
@@ -482,7 +543,6 @@ namespace CaminosDeGuanajuato.Overworld
             }
             else
             {
-                // Fallback directo a NivelPruebas_Defensa si no estuviera configurado
                 SceneManager.LoadScene("NivelPruebas_Defensa");
             }
         }

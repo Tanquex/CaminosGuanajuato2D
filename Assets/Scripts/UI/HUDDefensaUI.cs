@@ -608,148 +608,25 @@ namespace CaminosDeGuanajuato.UI
 
         private void DibujarMenuPausa()
         {
-            GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), texturaFondoOverlay);
-
-            float ancho = 460;
-            float alto = 380;
-            float x = (Screen.width - ancho) * 0.5f;
-            float y = (Screen.height - alto) * 0.5f;
-
-            GUILayout.BeginArea(new Rect(x, y, ancho, alto), estiloCajaOscura);
-            GUILayout.Space(14);
-            GUILayout.Label("⏸️ JUEGO EN PAUSA", estiloTituloBanner);
-            GUILayout.Label("Nivel 1: Defensa del Atrio Parroquial", estiloNivelBanner);
-            GUILayout.Space(14);
-
-            GUILayout.BeginVertical();
-
-            if (GUILayout.Button("▶️ CONTINUAR [ESC]", estiloBotonReinicio, GUILayout.Height(42)))
-            {
-                AlternarPausa();
-            }
-
-            GUILayout.Space(8);
-
-            if (GUILayout.Button("⚙ OPCIONES DE AUDIO / PANTALLA", estiloBotonReinicio, GUILayout.Height(42)))
-            {
-                if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
-                mostrarOpcionesPausa = true;
-            }
-
-            GUILayout.Space(8);
-
-            if (GUILayout.Button("🔄 REINICIAR NIVEL", estiloBotonReinicio, GUILayout.Height(42)))
-            {
-                if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
-                ReiniciarNivel();
-            }
-
-            GUILayout.Space(8);
-
-            if (GUILayout.Button("🗺️ MAPA GENERAL (OVERWORLD)", estiloBotonReinicio, GUILayout.Height(42)))
-            {
-                if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
-                IrAlOverworld();
-            }
-
-            GUILayout.Space(8);
-
-            if (GUILayout.Button("🏠 MENÚ PRINCIPAL", estiloBotonReinicio, GUILayout.Height(42)))
-            {
-                if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
-                IrAlMenuPrincipal();
-            }
-
-            GUILayout.EndVertical();
-            GUILayout.EndArea();
+            ColonialUIHelper.DibujarMenuPausaColonial(
+                "Nivel 1: Defensa del Atrio Parroquial (Dolores Hidalgo)",
+                AlternarPausa,
+                () => mostrarOpcionesPausa = true,
+                ReiniciarNivel,
+                IrAlOverworld,
+                IrAlMenuPrincipal
+            );
         }
 
         private void DibujarModalOpcionesPausa()
         {
-            GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), texturaFondoOverlay);
-
-            float ancho = 480;
-            float alto = 340;
-            float x = (Screen.width - ancho) * 0.5f;
-            float y = (Screen.height - alto) * 0.5f;
-
-            GUILayout.BeginArea(new Rect(x, y, ancho, alto), estiloCajaOscura);
-            GUILayout.Space(14);
-            GUILayout.Label("⚙ OPCIONES DE JUEGO", estiloTituloBanner);
-            GUILayout.Label("Ajustes de audio y visualización", estiloSubtituloHUD);
-            GUILayout.Space(14);
-
-            // Slider Volumen General
-            GUILayout.BeginHorizontal();
-            GUILayout.Label($"Volumen General: {Mathf.RoundToInt(volumenGeneral * 100)}%", estiloTextoBanner, GUILayout.Width(180));
-            float nuevoGen = GUILayout.HorizontalSlider(volumenGeneral, 0f, 1f);
-            if (Mathf.Abs(nuevoGen - volumenGeneral) > 0.001f)
-            {
-                volumenGeneral = nuevoGen;
-                AudioListener.volume = volumenGeneral;
-                if (AudioColonialManager.Instance != null)
-                {
-                    AudioColonialManager.Instance.AjustarVolumenGeneral(volumenGeneral);
-                }
-            }
-            GUILayout.EndHorizontal();
-
-            GUILayout.Space(8);
-
-            // Slider Música
-            GUILayout.BeginHorizontal();
-            GUILayout.Label($"Música Tradicional: {Mathf.RoundToInt(volumenMusica * 100)}%", estiloTextoBanner, GUILayout.Width(180));
-            float nuevaMus = GUILayout.HorizontalSlider(volumenMusica, 0f, 1f);
-            if (Mathf.Abs(nuevaMus - volumenMusica) > 0.001f)
-            {
-                volumenMusica = nuevaMus;
-                if (AudioColonialManager.Instance != null)
-                {
-                    AudioColonialManager.Instance.AjustarVolumenMusica(volumenMusica);
-                }
-            }
-            GUILayout.EndHorizontal();
-
-            GUILayout.Space(8);
-
-            // Slider SFX
-            GUILayout.BeginHorizontal();
-            GUILayout.Label($"Efectos de Sonido: {Mathf.RoundToInt(volumenSFX * 100)}%", estiloTextoBanner, GUILayout.Width(180));
-            float nuevoSFX = GUILayout.HorizontalSlider(volumenSFX, 0f, 1f);
-            if (Mathf.Abs(nuevoSFX - volumenSFX) > 0.001f)
-            {
-                volumenSFX = nuevoSFX;
-                if (AudioColonialManager.Instance != null)
-                {
-                    AudioColonialManager.Instance.AjustarVolumenSFX(volumenSFX);
-                }
-            }
-            GUILayout.EndHorizontal();
-
-            GUILayout.Space(10);
-
-            // Toggle Pantalla Completa
-            bool nuevaPantalla = GUILayout.Toggle(pantallaCompleta, " Pantalla Completa (Full Screen)", estiloTextoBanner);
-            if (nuevaPantalla != pantallaCompleta)
-            {
-                pantallaCompleta = nuevaPantalla;
-                Screen.fullScreen = pantallaCompleta;
-            }
-
-            GUILayout.Space(18);
-
-            // Botón Volver
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button("GUARDAR Y VOLVER", estiloBotonReinicio, GUILayout.Width(220), GUILayout.Height(40)))
-            {
-                if (AudioColonialManager.Instance != null) AudioColonialManager.Instance.ReproducirClickBoton();
-                mostrarOpcionesPausa = false;
-            }
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
-
-            GUILayout.EndArea();
+            ColonialUIHelper.DibujarModalOpcionesColonial(
+                ref volumenGeneral,
+                ref volumenMusica,
+                ref volumenSFX,
+                ref pantallaCompleta,
+                () => mostrarOpcionesPausa = false
+            );
         }
 
         public void IrAlOverworld()
