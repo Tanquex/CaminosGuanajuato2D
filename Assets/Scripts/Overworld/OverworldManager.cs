@@ -340,33 +340,23 @@ namespace CaminosDeGuanajuato.Overworld
                 sanFelipeDesbloqueado
             );
 
-            // PIN 1: SAN FELIPE (Norte)
-            float wPinSF = 206f;
-            float hPinSF = 48f;
+            // PIN 1: SAN FELIPE (Norte - Torres Mochas y La Francia Chiquita)
+            bool m4Hecha = ProgresoJuegoManager.Instance != null && ProgresoJuegoManager.Instance.EstaMisionCompletada(TipoMision.SanFelipe_Alfareria);
+            float wPinSF = 228f;
+            float hPinSF = 50f;
             Rect rPinSF = new Rect(posSanFelipe.x - wPinSF * 0.5f, posSanFelipe.y - hPinSF * 0.5f, wPinSF, hPinSF);
 
-            if (sanFelipeDesbloqueado)
+            string txtPinSF = m4Hecha
+                ? "🏺 SAN FELIPE (TORRES MOCHAS)\n⭐ ¡Taller Completado! • [ Jugar ]"
+                : "🏺 SAN FELIPE (TORRES MOCHAS)\n✨ Nivel 4: La Francia Chiquita [ ▶ ]";
+
+            if (ColonialUIHelper.BotonColonial(
+                rPinSF,
+                txtPinSF,
+                m4Hecha ? ColonialUIHelper.VarianteBoton.Dorado : ColonialUIHelper.VarianteBoton.Verde,
+                11))
             {
-                if (ColonialUIHelper.BotonColonial(
-                    rPinSF,
-                    "🌾 SAN FELIPE (NORTE)\n✨ ¡Camino Real Abierto!",
-                    ColonialUIHelper.VarianteBoton.Verde,
-                    12))
-                {
-                    ViajarASanFelipe();
-                }
-            }
-            else
-            {
-                if (ColonialUIHelper.BotonColonial(
-                    rPinSF,
-                    $"🔒 SAN FELIPE (NORTE)\nRequiere 3/3 en Dolores ({completadas}/3)",
-                    ColonialUIHelper.VarianteBoton.Madera,
-                    11))
-                {
-                    mostrarAvisoBloqueoSanFelipe = true;
-                    temporizadorAviso = 4.5f;
-                }
+                ViajarASanFelipe();
             }
 
             // PIN 2: DOLORES HIDALGO C.I.N. (Justo debajo de la Parroquia con la bandera)
@@ -412,12 +402,13 @@ namespace CaminosDeGuanajuato.Overworld
             bool m1Hecha = ProgresoJuegoManager.Instance != null && ProgresoJuegoManager.Instance.EstaMisionCompletada(TipoMision.Dolores_TowerDefense);
             bool m2Hecha = ProgresoJuegoManager.Instance != null && ProgresoJuegoManager.Instance.EstaMisionCompletada(TipoMision.Dolores_Nieves);
             bool m3Hecha = ProgresoJuegoManager.Instance != null && ProgresoJuegoManager.Instance.EstaMisionCompletada(TipoMision.Dolores_Duelo);
+            bool m4Hecha = ProgresoJuegoManager.Instance != null && ProgresoJuegoManager.Instance.EstaMisionCompletada(TipoMision.SanFelipe_Alfareria);
 
-            float xInicio = Mathf.Max(245f, Screen.width * 0.255f);
-            float margenDer = Mathf.Max(28f, Screen.width * 0.042f);
+            float xInicio = Mathf.Max(235f, Screen.width * 0.245f);
+            float margenDer = Mathf.Max(22f, Screen.width * 0.032f);
             float ancho = Screen.width - xInicio - margenDer;
             float alto = 96f;
-            float y = Screen.height - alto - Mathf.Max(20f, Screen.height * 0.042f);
+            float y = Screen.height - alto - Mathf.Max(18f, Screen.height * 0.038f);
 
             Rect rDock = new Rect(xInicio, y, ancho, alto);
             ColonialUIHelper.DibujarTarjetaInterior(rDock);
@@ -425,68 +416,71 @@ namespace CaminosDeGuanajuato.Overworld
             // Cabecera del Dock
             GUI.Label(
                 new Rect(rDock.x + 12f, rDock.y + 6f, rDock.width - 170f, 22f),
-                "📜 MISIONES DE DOLORES HIDALGO — Acceso Directo:",
+                "📜 RUTA DE GUANAJUATO (Niveles 1 al 4) — Acceso Directo:",
                 estiloTituloDock
             );
 
             Rect rBtnDetalles = new Rect(rDock.xMax - 150f, rDock.y + 6f, 140f, 24f);
-            if (ColonialUIHelper.BotonColonial(rBtnDetalles, "📋 Ver Detalles", ColonialUIHelper.VarianteBoton.Madera, 11))
+            if (ColonialUIHelper.BotonColonial(rBtnDetalles, "📋 Ver Tablero", ColonialUIHelper.VarianteBoton.Madera, 11))
             {
                 AbrirMisionesDolores();
             }
 
             ColonialUIHelper.DibujarSeparador(rDock.x + 10f, rDock.y + 33f, rDock.width - 20f);
 
-            // 3 Botones directos para las 3 misiones
+            // 4 Botones directos para los 4 niveles
             float padX = 10f;
-            float gap = 8f;
+            float gap = 6f;
             float wDisp = rDock.width - padX * 2f;
-            float wBoton = (wDisp - gap * 2f) / 3f;
+            float wBoton = (wDisp - gap * 3f) / 4f;
             float yBoton = rDock.y + 40f;
             float hBoton = 48f;
 
-            // Botón Misión 1: Defensa del Atrio
-            string txtM1 = m1Hecha
-                ? "⭐ 1. DEFENSA DEL ATRIO\n[ Completada • Repetir ]"
-                : "⚔ 1. DEFENSA DEL ATRIO\n[ ▶ Jugar Nivel 1 ]";
+            // Botón Nivel 1: Defensa del Atrio
+            string txtM1 = m1Hecha ? "⭐ 1. DEFENSA ATRIO\n[ Completado ]" : "⚔ 1. DEFENSA ATRIO\n[ ▶ Jugar Nivel 1 ]";
             if (ColonialUIHelper.BotonColonial(
                 new Rect(rDock.x + padX, yBoton, wBoton, hBoton),
                 txtM1,
                 m1Hecha ? ColonialUIHelper.VarianteBoton.Dorado : ColonialUIHelper.VarianteBoton.Verde,
-                11))
+                10))
             {
                 Time.timeScale = 1f;
                 SceneManager.LoadScene("NivelPruebas_Defensa");
             }
 
-            // Botón Misión 2: Puesto de Nieves
-            string txtM2 = m2Hecha
-                ? "⭐ 2. PUESTO DE NIEVES\n[ Completada • Repetir ]"
-                : "🍨 2. PUESTO DE NIEVES\n[ ▶ Jugar Nivel 2 ]";
+            // Botón Nivel 2: Puesto de Nieves
+            string txtM2 = m2Hecha ? "⭐ 2. NIEVES DOLORES\n[ Completado ]" : "🍨 2. NIEVES DOLORES\n[ ▶ Jugar Nivel 2 ]";
             if (ColonialUIHelper.BotonColonial(
-                new Rect(rDock.x + padX + wBoton + gap, yBoton, wBoton, hBoton),
+                new Rect(rDock.x + padX + (wBoton + gap), yBoton, wBoton, hBoton),
                 txtM2,
                 m2Hecha ? ColonialUIHelper.VarianteBoton.Dorado : ColonialUIHelper.VarianteBoton.Verde,
-                11))
+                10))
             {
                 Time.timeScale = 1f;
                 SceneManager.LoadScene("Nivel2_DesafioNieves");
             }
 
-            // Botón Misión 3: Duelo en la Plaza
-            bool m3Desbloqueada = m1Hecha || m2Hecha;
-            string txtM3 = m3Hecha
-                ? "⭐ 3. DUELO EN LA PLAZA\n[ Completada ]"
-                : (m3Desbloqueada
-                    ? "📜 3. DUELO EN LA PLAZA\n[ Ver en Tablero ]"
-                    : "🔒 3. DUELO EN LA PLAZA\n[ Supera Misión 1 o 2 ]");
+            // Botón Nivel 3: Duelo de Sones
+            string txtM3 = m3Hecha ? "⭐ 3. DUELO DE SONES\n[ Completado ]" : "🎸 3. DUELO DE SONES\n[ ▶ Jugar Nivel 3 ]";
             if (ColonialUIHelper.BotonColonial(
                 new Rect(rDock.x + padX + (wBoton + gap) * 2f, yBoton, wBoton, hBoton),
                 txtM3,
-                m3Desbloqueada ? ColonialUIHelper.VarianteBoton.Talavera : ColonialUIHelper.VarianteBoton.Gris,
-                11))
+                m3Hecha ? ColonialUIHelper.VarianteBoton.Dorado : ColonialUIHelper.VarianteBoton.Talavera,
+                10))
             {
-                AbrirMisionesDolores();
+                Time.timeScale = 1f;
+                SceneManager.LoadScene("Nivel3_DueloDestreza");
+            }
+
+            // Botón Nivel 4: San Felipe Torres Mochas (Alfarería)
+            string txtM4 = m4Hecha ? "⭐ 4. SAN FELIPE\n[ Completado ]" : "🏺 4. SAN FELIPE\n[ ▶ Jugar Nivel 4 ]";
+            if (ColonialUIHelper.BotonColonial(
+                new Rect(rDock.x + padX + (wBoton + gap) * 3f, yBoton, wBoton, hBoton),
+                txtM4,
+                m4Hecha ? ColonialUIHelper.VarianteBoton.Dorado : ColonialUIHelper.VarianteBoton.Verde,
+                10))
+            {
+                ViajarASanFelipe();
             }
         }
 
