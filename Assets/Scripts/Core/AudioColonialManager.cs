@@ -18,7 +18,7 @@ namespace CaminosDeGuanajuato.Core
             {
                 if (_instance == null)
                 {
-                    _instance = FindFirstObjectByType<AudioColonialManager>();
+                    _instance = FindAnyObjectByType<AudioColonialManager>();
                     if (_instance == null)
                     {
                         GameObject go = new GameObject("AudioColonialManager_Global");
@@ -61,6 +61,13 @@ namespace CaminosDeGuanajuato.Core
         private AudioClip proceduralErrorPedido;
         private AudioClip proceduralDerrota;
         private AudioClip proceduralClickBoton;
+        private AudioClip[] proceduralNotasMusicales = new AudioClip[4];
+        private AudioClip proceduralBlipDialogo;
+        private AudioClip proceduralTornoAlfarero;
+        private AudioClip proceduralPincelEsmalte;
+        private AudioClip proceduralFuegoHorno;
+        private float tiempoUltimoRasparHielo = -1f;
+        private float tiempoUltimoBlipDialogo = -1f;
 
         public float VolumenGeneral => volumenGeneral;
         public float VolumenMusica => volumenMusica;
@@ -124,6 +131,76 @@ namespace CaminosDeGuanajuato.Core
             proceduralErrorPedido = CrearClipErrorPedido();
             proceduralDerrota = CrearClipDerrota();
             proceduralClickBoton = CrearClipClickBoton();
+            for (int c = 0; c < 4; c++)
+            {
+                proceduralNotasMusicales[c] = CrearClipNotaMusicalColonial(c);
+            }
+            proceduralBlipDialogo = CrearClipBlipDialogo();
+            proceduralTornoAlfarero = CrearClipTornoAlfarero();
+            proceduralPincelEsmalte = CrearClipPincelEsmalte();
+            proceduralFuegoHorno = CrearClipFuegoHorno();
+        }
+
+        public void ReproducirTornoAlfarero(float progreso01 = 0.5f)
+        {
+            if (proceduralTornoAlfarero != null && audioSourceSFX != null)
+            {
+                audioSourceSFX.pitch = Mathf.Lerp(0.92f, 1.18f, Mathf.Clamp01(progreso01));
+                audioSourceSFX.PlayOneShot(proceduralTornoAlfarero, volumenSFX * volumenGeneral * 0.85f);
+            }
+        }
+
+        public void ReproducirPincelEsmalte()
+        {
+            if (proceduralPincelEsmalte != null && audioSourceSFX != null)
+            {
+                audioSourceSFX.pitch = Random.Range(0.96f, 1.08f);
+                audioSourceSFX.PlayOneShot(proceduralPincelEsmalte, volumenSFX * volumenGeneral * 0.85f);
+            }
+        }
+
+        public void ReproducirFuegoHorno()
+        {
+            if (proceduralFuegoHorno != null && audioSourceSFX != null)
+            {
+                audioSourceSFX.pitch = Random.Range(0.95f, 1.05f);
+                audioSourceSFX.PlayOneShot(proceduralFuegoHorno, volumenSFX * volumenGeneral * 0.90f);
+            }
+        }
+
+        public void IniciarMusicaSanFelipe()
+        {
+            AudioClip clipSF = CargarClipWavDesdeDisco("Audio/Musica_SanFelipeFranciaChiquita.wav");
+            if (clipSF != null)
+            {
+                IniciarMusicaDeFondo(clipSF);
+            }
+            else
+            {
+                IniciarMusicaDeFondo();
+            }
+        }
+
+        public void ReproducirNotaMusical(int carril, bool esPerfecto = true)
+        {
+            int idx = Mathf.Clamp(carril, 0, 3);
+            if (proceduralNotasMusicales[idx] != null && audioSourceSFX != null)
+            {
+                audioSourceSFX.pitch = esPerfecto ? 1.0f : 0.98f;
+                audioSourceSFX.PlayOneShot(proceduralNotasMusicales[idx], volumenSFX * volumenGeneral * (esPerfecto ? 0.95f : 0.78f));
+            }
+        }
+
+        public void ReproducirBlipDialogo(float pitchBase = 1.0f)
+        {
+            if (Time.unscaledTime - tiempoUltimoBlipDialogo < 0.042f) return;
+            tiempoUltimoBlipDialogo = Time.unscaledTime;
+
+            if (proceduralBlipDialogo != null && audioSourceSFX != null)
+            {
+                audioSourceSFX.pitch = Mathf.Clamp(pitchBase + Random.Range(-0.07f, 0.07f), 0.7f, 1.4f);
+                audioSourceSFX.PlayOneShot(proceduralBlipDialogo, volumenSFX * volumenGeneral * 0.45f);
+            }
         }
 
         public void ReproducirDisparoHonda()
@@ -188,9 +265,12 @@ namespace CaminosDeGuanajuato.Core
 
         public void ReproducirRasparHielo()
         {
-            if (proceduralRasparHielo != null)
+            if (Time.unscaledTime - tiempoUltimoRasparHielo < 0.14f) return;
+            tiempoUltimoRasparHielo = Time.unscaledTime;
+
+            if (proceduralRasparHielo != null && audioSourceSFX != null)
             {
-                audioSourceSFX.pitch = Random.Range(0.92f, 1.15f);
+                audioSourceSFX.pitch = UnityEngine.Random.Range(0.92f, 1.15f);
                 audioSourceSFX.PlayOneShot(proceduralRasparHielo, volumenSFX * volumenGeneral * 0.7f);
             }
         }
@@ -626,6 +706,132 @@ namespace CaminosDeGuanajuato.Core
             }
 
             AudioClip clip = AudioClip.Create("SFX_ClickBoton", numSamples, 1, sampleRate, false);
+            clip.SetData(samples, 0);
+            return clip;
+        }
+
+        private AudioClip CrearClipNotaMusicalColonial(int carril)
+        {
+            int sampleRate = 44100;
+            float duracion = 0.28f;
+            int numSamples = (int)(sampleRate * duracion);
+            float[] samples = new float[numSamples];
+
+            // Escala armónica tradicional mexicana (Do Mayor / Sol7 festivo: C4, E4, G4, C5)
+            // Combinado con golpe percusivo de tambor/vihuela colonial
+            float[] frecuencias = { 261.63f, 329.63f, 392.00f, 523.25f };
+            float freqBase = frecuencias[Mathf.Clamp(carril, 0, 3)];
+
+            for (int i = 0; i < numSamples; i++)
+            {
+                float t = (float)i / sampleRate;
+                float envNota = Mathf.Exp(-t * 9.5f);
+                float envTambor = Mathf.Exp(-t * 42f);
+
+                // Cuerda punteada de vihuela/jarana (fundamental + 2º y 3er armónico)
+                float cuerda = Mathf.Sin(2f * Mathf.PI * freqBase * t) * 0.55f
+                             + Mathf.Sin(4f * Mathf.PI * freqBase * t) * 0.25f
+                             + Mathf.Sin(6f * Mathf.PI * freqBase * t) * 0.12f;
+
+                // Golpe de parche de tambor insurgente al ataque
+                float freqTambor = Mathf.Lerp(190f, 75f, Mathf.Clamp01(t * 25f));
+                float tambor = Mathf.Sin(2f * Mathf.PI * freqTambor * t) * envTambor * 0.45f;
+
+                samples[i] = Mathf.Clamp((cuerda * envNota + tambor) * 0.85f, -1f, 1f);
+            }
+
+            AudioClip clip = AudioClip.Create($"SFX_NotaMusical_{carril}", numSamples, 1, sampleRate, false);
+            clip.SetData(samples, 0);
+            return clip;
+        }
+
+        private AudioClip CrearClipBlipDialogo()
+        {
+            int sampleRate = 44100;
+            float duracion = 0.032f;
+            int numSamples = (int)(sampleRate * duracion);
+            float[] samples = new float[numSamples];
+
+            for (int i = 0; i < numSamples; i++)
+            {
+                float t = (float)i / sampleRate;
+                float env = Mathf.Sin(Mathf.PI * (float)i / numSamples);
+                float freq = Mathf.Lerp(420f, 480f, (float)i / numSamples);
+                float onda = Mathf.Sin(2f * Mathf.PI * freq * t) + 0.3f * Mathf.Sin(4f * Mathf.PI * freq * t);
+                samples[i] = onda * env * 0.4f;
+            }
+
+            AudioClip clip = AudioClip.Create("SFX_BlipDialogo", numSamples, 1, sampleRate, false);
+            clip.SetData(samples, 0);
+            return clip;
+        }
+
+        private AudioClip CrearClipTornoAlfarero()
+        {
+            int sampleRate = 44100;
+            float duracion = 0.22f;
+            int numSamples = (int)(sampleRate * duracion);
+            float[] samples = new float[numSamples];
+
+            // Giro de madera del torno + moldeado húmedo de arcilla
+            for (int i = 0; i < numSamples; i++)
+            {
+                float t = (float)i / sampleRate;
+                float env = Mathf.Sin(Mathf.PI * (float)i / numSamples);
+                float freqMadera = Mathf.Lerp(180f, 320f, (float)i / numSamples);
+                float giro = Mathf.Sin(2f * Mathf.PI * freqMadera * t) * 0.45f;
+                float arcilla = (Random.value * 2f - 1f) * 0.18f * Mathf.Exp(-t * 14f);
+                samples[i] = Mathf.Clamp((giro + arcilla) * env * 0.8f, -1f, 1f);
+            }
+
+            AudioClip clip = AudioClip.Create("SFX_TornoAlfarero", numSamples, 1, sampleRate, false);
+            clip.SetData(samples, 0);
+            return clip;
+        }
+
+        private AudioClip CrearClipPincelEsmalte()
+        {
+            int sampleRate = 44100;
+            float duracion = 0.18f;
+            int numSamples = (int)(sampleRate * duracion);
+            float[] samples = new float[numSamples];
+
+            // Destello cristalino de esmalte vidriado (G5 -> B5)
+            for (int i = 0; i < numSamples; i++)
+            {
+                float t = (float)i / sampleRate;
+                float env = Mathf.Exp(-t * 16f);
+                float freq = (t < 0.08f) ? 783.99f : 987.77f;
+                float campana = Mathf.Sin(2f * Mathf.PI * freq * t) * 0.55f + Mathf.Sin(4f * Mathf.PI * freq * t) * 0.25f;
+                samples[i] = Mathf.Clamp(campana * env * 0.7f, -1f, 1f);
+            }
+
+            AudioClip clip = AudioClip.Create("SFX_PincelEsmalte", numSamples, 1, sampleRate, false);
+            clip.SetData(samples, 0);
+            return clip;
+        }
+
+        private AudioClip CrearClipFuegoHorno()
+        {
+            int sampleRate = 44100;
+            float duracion = 0.35f;
+            int numSamples = (int)(sampleRate * duracion);
+            float[] samples = new float[numSamples];
+
+            // Soplido cálido de leña y fuego en el horno de ladrillo
+            float prev = 0f;
+            for (int i = 0; i < numSamples; i++)
+            {
+                float t = (float)i / sampleRate;
+                float env = Mathf.Sin(Mathf.PI * (float)i / numSamples);
+                float white = Random.value * 2f - 1f;
+                // Filtro paso-bajo simple para sonido cálido de llama
+                prev = prev * 0.86f + white * 0.14f;
+                float brasa = Mathf.Sin(2f * Mathf.PI * 115f * t) * 0.25f;
+                samples[i] = Mathf.Clamp((prev * 1.4f + brasa) * env * 0.75f, -1f, 1f);
+            }
+
+            AudioClip clip = AudioClip.Create("SFX_FuegoHorno", numSamples, 1, sampleRate, false);
             clip.SetData(samples, 0);
             return clip;
         }

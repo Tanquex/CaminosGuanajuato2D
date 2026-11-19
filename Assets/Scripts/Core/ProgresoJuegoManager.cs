@@ -7,7 +7,8 @@ namespace CaminosDeGuanajuato.Core
     {
         Dolores_TowerDefense = 1, // Misión 1: La Defensa del Atrio Parroquial
         Dolores_Nieves = 2,       // Misión 2: El Desafío de las Nieves Tradicionales
-        Dolores_Duelo = 3         // Misión 3: Duelo de Destreza en la Plaza
+        Dolores_Duelo = 3,        // Misión 3: Duelo de Sones en la Plaza
+        SanFelipe_Alfareria = 4   // Misión 4: El Taller Alfarero de la Francia Chiquita (San Felipe Torres Mochas)
     }
 
     /// <summary>
@@ -16,6 +17,7 @@ namespace CaminosDeGuanajuato.Core
     /// - Dolores_TowerDefense (0 o 1) -> Medalla 1: Emblema de la Libertad
     /// - Dolores_Nieves (0 o 1) -> Medalla 2: Cuchara Dorada Artesanal
     /// - Dolores_Duelo (0 o 1) -> Desbloqueo del Salvoconducto a San Felipe
+    /// - SanFelipe_Alfareria (0 o 1) -> Medalla 4: Sello Real de las Torres Mochas
     /// </summary>
     public class ProgresoJuegoManager : MonoBehaviour
     {
@@ -24,7 +26,9 @@ namespace CaminosDeGuanajuato.Core
         public const string KEY_MISION1 = "Dolores_TowerDefense";
         public const string KEY_MISION2 = "Dolores_Nieves";
         public const string KEY_MISION3 = "Dolores_Duelo";
+        public const string KEY_MISION4 = "SanFelipe_Alfareria";
         public const string KEY_RECORD_NIEVES = "Record_Puntos_Nieves";
+        public const string KEY_RECORD_ALFARERIA = "Record_Puntos_Alfareria";
 
         public event Action OnProgresoActualizado;
 
@@ -69,6 +73,14 @@ namespace CaminosDeGuanajuato.Core
                     PlayerPrefs.SetInt(KEY_RECORD_NIEVES, puntaje);
                 }
             }
+            else if (mision == TipoMision.SanFelipe_Alfareria)
+            {
+                int recordPrevio = PlayerPrefs.GetInt(KEY_RECORD_ALFARERIA, 0);
+                if (puntaje > recordPrevio)
+                {
+                    PlayerPrefs.SetInt(KEY_RECORD_ALFARERIA, puntaje);
+                }
+            }
 
             PlayerPrefs.Save();
             Debug.Log($"<color=green>[Progreso]</color> ¡Misión {mision} registrada como COMPLETADA! Total Dolores: {ObtenerTotalCompletadasDolores()}/3");
@@ -91,14 +103,11 @@ namespace CaminosDeGuanajuato.Core
         /// </summary>
         public bool EstaDesbloqueadoSanFelipe()
         {
-            return ObtenerTotalCompletadasDolores() >= 3;
+            return ObtenerTotalCompletadasDolores() >= 3 || EstaMisionCompletada(TipoMision.Dolores_Duelo);
         }
 
         /// <summary>
         /// Comprueba si una misión está desbloqueada y lista para jugar.
-        /// Misión 1: Siempre disponible.
-        /// Misión 2: Disponible de inmediato o tras Misión 1 (según el GDD ambas son locales).
-        /// Misión 3: Requiere haber completado al menos la Misión 1 o 2.
         /// </summary>
         public bool EstaMisionDesbloqueada(TipoMision mision)
         {
@@ -110,6 +119,8 @@ namespace CaminosDeGuanajuato.Core
                     return true; // Abierta para el festival de nieves
                 case TipoMision.Dolores_Duelo:
                     return EstaMisionCompletada(TipoMision.Dolores_TowerDefense) || EstaMisionCompletada(TipoMision.Dolores_Nieves);
+                case TipoMision.SanFelipe_Alfareria:
+                    return EstaDesbloqueadoSanFelipe();
                 default:
                     return false;
             }
@@ -120,6 +131,11 @@ namespace CaminosDeGuanajuato.Core
             return PlayerPrefs.GetInt(KEY_RECORD_NIEVES, 0);
         }
 
+        public int ObtenerRecordAlfareria()
+        {
+            return PlayerPrefs.GetInt(KEY_RECORD_ALFARERIA, 0);
+        }
+
         /// <summary>
         /// Método de utilidad para pruebas de reseteo de progreso.
         /// </summary>
@@ -128,9 +144,11 @@ namespace CaminosDeGuanajuato.Core
             PlayerPrefs.DeleteKey(KEY_MISION1);
             PlayerPrefs.DeleteKey(KEY_MISION2);
             PlayerPrefs.DeleteKey(KEY_MISION3);
+            PlayerPrefs.DeleteKey(KEY_MISION4);
             PlayerPrefs.DeleteKey(KEY_RECORD_NIEVES);
+            PlayerPrefs.DeleteKey(KEY_RECORD_ALFARERIA);
             PlayerPrefs.Save();
-            Debug.Log("<color=yellow>[Progreso]</color> Progreso de Dolores Hidalgo reiniciado a 0/3.");
+            Debug.Log("<color=yellow>[Progreso]</color> Progreso de Guanajuato reiniciado.");
             OnProgresoActualizado?.Invoke();
         }
 
@@ -141,6 +159,7 @@ namespace CaminosDeGuanajuato.Core
                 case TipoMision.Dolores_TowerDefense: return KEY_MISION1;
                 case TipoMision.Dolores_Nieves: return KEY_MISION2;
                 case TipoMision.Dolores_Duelo: return KEY_MISION3;
+                case TipoMision.SanFelipe_Alfareria: return KEY_MISION4;
                 default: return KEY_MISION1;
             }
         }
