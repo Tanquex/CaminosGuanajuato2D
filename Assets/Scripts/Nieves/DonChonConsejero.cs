@@ -46,10 +46,10 @@ namespace CaminosDeGuanajuato.Nieves
             }
         }
 
-        public void MostrarMensaje(string texto, float duracion = 4.5f)
+        public void MostrarMensaje(string texto, float duracion = -1f)
         {
             mensajeActual = texto;
-            temporizadorMensaje = duracion;
+            temporizadorMensaje = (duracion > 0f) ? duracion : duracionMensaje;
         }
 
         public void DecirFraseInicial()

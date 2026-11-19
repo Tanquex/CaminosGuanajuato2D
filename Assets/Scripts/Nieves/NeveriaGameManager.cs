@@ -16,8 +16,9 @@ namespace CaminosDeGuanajuato.Nieves
     /// <summary>
     /// Administrador del Nivel 2: El Desafío de las Nieves Tradicionales.
     /// Configura el escenario del Jardín Principal y Parroquia de Dolores Hidalgo,
-    /// y ensambla los personajes del paquete importado Custom Character 2D Vol 1
-    /// para Don Chon y los comensales sobre el empedrado de la plaza.
+    /// sitúa al maestro nevero Don Chon junto a su puesto artesanal y gestiona la llegada
+    /// de habitantes y turistas virreinales (Doña Remedios, Don Silvestre el Arriero,
+    /// Joven Alfarero, Criolla de San Felipe) con sprites pixel art 32-bit de 1810.
     /// </summary>
     public class NeveriaGameManager : MonoBehaviour
     {
@@ -29,29 +30,16 @@ namespace CaminosDeGuanajuato.Nieves
         [SerializeField] private float duracionJornada = 140f;
 
         [Header("Puntos de Movimiento sobre el Empedrado")]
-        [SerializeField] private Vector3 puntoSpawnCliente = new Vector3(7.2f, -2.28f, 0f);
-        [SerializeField] private Vector3 puntoMostradorCliente = new Vector3(1.25f, -2.28f, 0f);
-        [SerializeField] private Vector3 puntoSalidaCliente = new Vector3(7.8f, -2.28f, 0f);
+        [SerializeField] private Vector3 puntoSpawnCliente = new Vector3(7.2f, -2.25f, 0f);
+        [SerializeField] private Vector3 puntoMostradorCliente = new Vector3(1.25f, -2.25f, 0f);
+        [SerializeField] private Vector3 puntoSalidaCliente = new Vector3(7.8f, -2.25f, 0f);
 
         private SpriteRenderer fondoEscenarioRenderer;
         private GameObject goDonChon;
+        private SpriteRenderer srDonChon;
 
-        // Caché de texturas y sprites de Custom Character 2D Vol 1 (exclusivo Nivel 2)
-        private Dictionary<string, Texture2D> cacheTexturasCC = new Dictionary<string, Texture2D>();
-        private Dictionary<string, Sprite> cacheSpritesCC = new Dictionary<string, Sprite>();
-
-        private struct ConfiguracionPersonajeCC
-        {
-            public string body;
-            public string hairBack;
-            public string hairFront;
-            public string ear;
-            public Rect rectEyebrow;
-            public Rect rectEye;
-            public Rect rectMouth;
-        }
-
-        private List<ConfiguracionPersonajeCC> catalogoVariantesCC = new List<ConfiguracionPersonajeCC>();
+        // Caché de sprites coloniales
+        private Dictionary<string, Sprite> cacheSprites = new Dictionary<string, Sprite>();
 
         private EstadoJuegoNeveria estadoJuego = EstadoJuegoNeveria.Jugando;
         private int clientesAtendidos = 0;
@@ -63,9 +51,15 @@ namespace CaminosDeGuanajuato.Nieves
 
         private List<string> nombresComensales = new List<string>
         {
-            "Doña Remedios", "Don Silvestre el Arriero", "Joven Alfarero",
-            "Viajero de Irapuato", "Turista Poblana", "Corregidor Suplente",
-            "Criolla de San Felipe", "Aprendiz de Cantería", "Comerciante de Loza"
+            "Doña Remedios",
+            "Don Silvestre el Arriero",
+            "Joven Alfarero",
+            "Criolla de San Felipe",
+            "Viajero de Irapuato",
+            "Turista Poblana",
+            "Aprendiz de Cantería",
+            "Comerciante de Loza",
+            "Corregidor Suplente"
         };
 
         public EstadoJuegoNeveria EstadoJuego => estadoJuego;
@@ -79,6 +73,7 @@ namespace CaminosDeGuanajuato.Nieves
         public string UltimoErrorEntrega => ultimoErrorEntrega;
 
         public event Action OnEstadoCambiado;
+        public event Action<string, Color, Vector3> OnNotificacionFlotante;
 
         private void Awake()
         {
@@ -90,16 +85,15 @@ namespace CaminosDeGuanajuato.Nieves
             Instance = this;
             tiempoRestante = duracionJornada;
 
-            // Posiciones sobre la calle empedrada a la derecha del puesto
-            puntoSpawnCliente = new Vector3(7.2f, -2.28f, 0f);
-            puntoMostradorCliente = new Vector3(1.25f, -2.28f, 0f);
-            puntoSalidaCliente = new Vector3(7.8f, -2.28f, 0f);
+            // Altura de referencia sobre la calle empedrada
+            puntoSpawnCliente = new Vector3(7.2f, -2.25f, 0f);
+            puntoMostradorCliente = new Vector3(1.25f, -2.25f, 0f);
+            puntoSalidaCliente = new Vector3(7.8f, -2.25f, 0f);
         }
 
         private void Start()
         {
             Time.timeScale = 1f;
-            InicializarCatalogoCustomCharacterVol1();
             ConfigurarEscenarioColonial();
             StartCoroutine(GenerarSiguienteCliente(1.0f));
         }
@@ -107,6 +101,7 @@ namespace CaminosDeGuanajuato.Nieves
         private void Update()
         {
             AjustarFondoACamara();
+            ActualizarAnimacionDonChon();
 
             if (estadoJuego != EstadoJuegoNeveria.Jugando) return;
 
@@ -118,105 +113,12 @@ namespace CaminosDeGuanajuato.Nieves
         }
 
         /// <summary>
-        /// Prepara las combinaciones de cuerpo, peinado y rostro del paquete Custom Character 2D Vol 1.
-        /// </summary>
-        private void InicializarCatalogoCustomCharacterVol1()
-        {
-            catalogoVariantesCC.Clear();
-
-            // Coordenadas de sub-sprites en eye.png (540x300) y mouth.png (192x192)
-            Rect cejaNormal = new Rect(0, 200, 180, 100);     // eye_0
-            Rect cejaAmable = new Rect(180, 200, 180, 100);   // eye_1
-            Rect cejaFirme = new Rect(360, 200, 180, 100);    // eye_2
-
-            Rect ojosAbiertos = new Rect(180, 100, 180, 100); // eye_4
-            Rect ojosAlegres = new Rect(0, 0, 180, 100);      // eye_6
-
-            Rect bocaSonrisa = new Rect(64, 0, 64, 64);       // mouth_7
-            Rect bocaAlegre = new Rect(0, 128, 64, 64);       // mouth_0
-            Rect bocaSerena = new Rect(64, 64, 64, 64);       // mouth_4
-            Rect bocaEntusiasmo = new Rect(0, 0, 64, 64);     // mouth_6
-
-            // Variante 1: Casaca Azul, Cabello Rubio Lacio
-            catalogoVariantesCC.Add(new ConfiguracionPersonajeCC
-            {
-                body = "body/body1",
-                hairBack = "hair_back/h_b_b1",
-                hairFront = "hair_front/h_f_b1",
-                ear = "face/face_ear_00",
-                rectEyebrow = cejaAmable,
-                rectEye = ojosAbiertos,
-                rectMouth = bocaSonrisa
-            });
-
-            // Variante 2: Casaca Roja, Cabello Oscuro Rebelde
-            catalogoVariantesCC.Add(new ConfiguracionPersonajeCC
-            {
-                body = "body/body2",
-                hairBack = "hair_back/h_b_a3",
-                hairFront = "hair_front/h_f_a3",
-                ear = "face/face_ear_00",
-                rectEyebrow = cejaNormal,
-                rectEye = ojosAbiertos,
-                rectMouth = bocaAlegre
-            });
-
-            // Variante 3: Casaca Naranja, Cabello Castaño/Rojo Lacio
-            catalogoVariantesCC.Add(new ConfiguracionPersonajeCC
-            {
-                body = "body/body3",
-                hairBack = "hair_back/h_b_b2",
-                hairFront = "hair_front/h_f_b2",
-                ear = "face/face_ear_00",
-                rectEyebrow = cejaNormal,
-                rectEye = ojosAbiertos,
-                rectMouth = bocaSonrisa
-            });
-
-            // Variante 4: Casaca Negra, Cabello Rubio Rebelde
-            catalogoVariantesCC.Add(new ConfiguracionPersonajeCC
-            {
-                body = "body/body4",
-                hairBack = "hair_back/h_b_a1",
-                hairFront = "hair_front/h_f_a1",
-                ear = "face/face_ear_00",
-                rectEyebrow = cejaFirme,
-                rectEye = ojosAbiertos,
-                rectMouth = bocaSerena
-            });
-
-            // Variante 5: Casaca Roja, Cabello Pelirrojo Rebelde
-            catalogoVariantesCC.Add(new ConfiguracionPersonajeCC
-            {
-                body = "body/body2",
-                hairBack = "hair_back/h_b_a2",
-                hairFront = "hair_front/h_f_a2",
-                ear = "face/face_ear_00",
-                rectEyebrow = cejaAmable,
-                rectEye = ojosAlegres,
-                rectMouth = bocaEntusiasmo
-            });
-
-            // Variante 6: Casaca Azul, Cabello Oscuro Lacio
-            catalogoVariantesCC.Add(new ConfiguracionPersonajeCC
-            {
-                body = "body/body1",
-                hairBack = "hair_back/h_b_b3",
-                hairFront = "hair_front/h_f_b3",
-                ear = "face/face_ear_00",
-                rectEyebrow = cejaNormal,
-                rectEye = ojosAbiertos,
-                rectMouth = bocaAlegre
-            });
-        }
-
-        /// <summary>
         /// Monta el escenario visual con el quiosco de Dolores Hidalgo y sitúa a Don Chon
-        /// junto al mostrador usando Custom Character 2D Vol 1.
+        /// junto a su puesto de nieves con su sprite pixel art colonial de cuerpo completo.
         /// </summary>
         private void ConfigurarEscenarioColonial()
         {
-            // Limpiar cualquier objeto heredado fuera de lugar si existiera
+            // Limpiar objetos temporales de versiones anteriores si existieran
             GameObject viejoGuanajicho = GameObject.Find("Guanajicho_EnMostrador");
             if (viejoGuanajicho != null) Destroy(viejoGuanajicho);
 
@@ -234,186 +136,112 @@ namespace CaminosDeGuanajuato.Nieves
             }
             AjustarFondoACamara();
 
-            // 2. Colocar a Don Chon junto al puesto usando Custom Character 2D Vol 1
+            // 2. Colocar a Don Chon junto al puesto de nieves
+            goDonChon = GameObject.Find("DonChon_ElNeveroMayor");
             if (goDonChon == null)
             {
-                goDonChon = GameObject.Find("DonChon_ElNeveroMayor");
-                if (goDonChon != null) Destroy(goDonChon);
-
                 goDonChon = new GameObject("DonChon_ElNeveroMayor");
-                goDonChon.transform.position = new Vector3(-0.35f, -2.28f, 0f);
-                goDonChon.transform.localScale = new Vector3(0.135f, 0.135f, 1f);
-
-                ConfiguracionPersonajeCC configDonChon = new ConfiguracionPersonajeCC
-                {
-                    body = "body/body3",
-                    hairBack = "hair_back/h_b_b3",
-                    hairFront = "hair_front/h_f_b3",
-                    ear = "face/face_ear_00",
-                    rectEyebrow = new Rect(0, 200, 180, 100),   // eye_0
-                    rectEye = new Rect(180, 100, 180, 100),     // eye_4
-                    rectMouth = new Rect(0, 0, 64, 64)          // mouth_6 (sonrisa cálida)
-                };
-
-                EnsamblarPersonajeCustomVol1(goDonChon, configDonChon, ordenBase: 5);
             }
+
+            // Limpiar hijos antiguos si existieran (ej. partes modulares viejas)
+            for (int i = goDonChon.transform.childCount - 1; i >= 0; i--)
+            {
+                Destroy(goDonChon.transform.GetChild(i).gameObject);
+            }
+
+            goDonChon.transform.position = new Vector3(-0.35f, -2.25f, 0f);
+            goDonChon.transform.localScale = Vector3.one;
+
+            srDonChon = goDonChon.GetComponent<SpriteRenderer>();
+            if (srDonChon == null) srDonChon = goDonChon.AddComponent<SpriteRenderer>();
+            srDonChon.sortingOrder = 6;
+            srDonChon.sprite = CargarSpriteColonial("DonChon");
+            srDonChon.flipX = false; // Mira hacia el mostrador/comensal
+        }
+
+        private void ActualizarAnimacionDonChon()
+        {
+            if (goDonChon == null) return;
+            // Respiración sutil y movimiento cálido del maestro nevero
+            float respiracion = Mathf.Sin(Time.time * 2.8f) * 0.015f;
+            goDonChon.transform.localScale = new Vector3(1f - respiracion * 0.3f, 1f + respiracion, 1f);
         }
 
         /// <summary>
-        /// Construye la jerarquía por capas (body, hair_back, face_ear, face_eye, face_bllow,
-        /// face_mouth, hair_front) idéntica a sample.unity de Custom Character 2D Vol 1,
-        /// con origen en la suela de las botas para caminar sobre el empedrado.
+        /// Carga un sprite colonial pixel art con pivote en los pies (0.5, 0.0) y resolución correcta,
+        /// compatible tanto con el Editor de Unity como con compilaciones WebGL.
         /// </summary>
-        private void EnsamblarPersonajeCustomVol1(GameObject raizPersonaje, ConfiguracionPersonajeCC config, int ordenBase)
+        public Sprite CargarSpriteColonial(string nombre)
         {
-            // En sample.unity el borde inferior de las botas (body 624x2048 centrado en -3.65)
-            // queda en y = -3.65 - 10.24 = -13.89. Desplazamos todas las capas +13.89 en Y
-            // para que el punto (0,0,0) del objeto raíz sea exactamente la planta de los pies.
-            Vector3 offsetPies = new Vector3(0.50f, 13.89f, 0f);
-
-            CrearCapaSprite(
-                raizPersonaje.transform,
-                "body",
-                ObtenerSpriteCompletoCC(config.body),
-                new Vector3(-0.94f, -3.65f, 0f) + offsetPies,
-                ordenBase + 0
-            );
-
-            CrearCapaSprite(
-                raizPersonaje.transform,
-                "hair_back",
-                ObtenerSpriteCompletoCC(config.hairBack),
-                new Vector3(-0.461f, 4.729f, 0f) + offsetPies,
-                ordenBase + 1
-            );
-
-            CrearCapaSprite(
-                raizPersonaje.transform,
-                "face_ear",
-                ObtenerSpriteCompletoCC(config.ear),
-                new Vector3(-0.151f, 3.954f, 0f) + offsetPies,
-                ordenBase + 2
-            );
-
-            CrearCapaSprite(
-                raizPersonaje.transform,
-                "face_eye",
-                ObtenerSubSpriteCC("face/eye", config.rectEye),
-                new Vector3(0.349f, 3.92f, 0f) + offsetPies,
-                ordenBase + 2
-            );
-
-            CrearCapaSprite(
-                raizPersonaje.transform,
-                "face_bllow",
-                ObtenerSubSpriteCC("face/eye", config.rectEyebrow),
-                new Vector3(0.408f, 4.327f, 0f) + offsetPies,
-                ordenBase + 2
-            );
-
-            CrearCapaSprite(
-                raizPersonaje.transform,
-                "face_mouth",
-                ObtenerSubSpriteCC("face/mouth", config.rectMouth),
-                new Vector3(0.167f, 3.104f, 0f) + offsetPies,
-                ordenBase + 2
-            );
-
-            CrearCapaSprite(
-                raizPersonaje.transform,
-                "hair_front",
-                ObtenerSpriteCompletoCC(config.hairFront),
-                new Vector3(0.273f, 4.185f, 0f) + offsetPies,
-                ordenBase + 3
-            );
-        }
-
-        private void CrearCapaSprite(Transform padre, string nombreCapa, Sprite sprite, Vector3 posLocal, int sortingOrder)
-        {
-            if (sprite == null) return;
-            GameObject goCapa = new GameObject(nombreCapa);
-            goCapa.transform.SetParent(padre, false);
-            goCapa.transform.localPosition = posLocal;
-            goCapa.transform.localRotation = Quaternion.identity;
-            goCapa.transform.localScale = Vector3.one;
-
-            SpriteRenderer sr = goCapa.AddComponent<SpriteRenderer>();
-            sr.sprite = sprite;
-            sr.sortingOrder = sortingOrder;
-        }
-
-        private Texture2D CargarTexturaCC(string subRutaSinExtension)
-        {
-            if (cacheTexturasCC.TryGetValue(subRutaSinExtension, out Texture2D texCache) && texCache != null)
-            {
-                return texCache;
-            }
-
-            // 1. Cargar desde Resources/CustomCharacter (compatible con WebGL y Editor)
-            Texture2D tex = Resources.Load<Texture2D>("CustomCharacter/" + subRutaSinExtension);
-            if (tex != null)
-            {
-                cacheTexturasCC[subRutaSinExtension] = tex;
-                return tex;
-            }
-
-#if UNITY_EDITOR || UNITY_STANDALONE
-            // 2. Fallback directo desde Assets/Custom Character_Vol1/png/character/
-            string rutaArchivo = System.IO.Path.Combine(Application.dataPath, "Custom Character_Vol1/png/character", subRutaSinExtension + ".png");
-            if (System.IO.File.Exists(rutaArchivo))
-            {
-                byte[] bytes = System.IO.File.ReadAllBytes(rutaArchivo);
-                Texture2D nuevaTex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-                if (ImageConversion.LoadImage(nuevaTex, bytes))
-                {
-                    nuevaTex.filterMode = FilterMode.Bilinear;
-                    nuevaTex.wrapMode = TextureWrapMode.Clamp;
-                    cacheTexturasCC[subRutaSinExtension] = nuevaTex;
-                    return nuevaTex;
-                }
-            }
-#endif
-            Debug.LogWarning($"[Neveria] No se pudo cargar textura de Custom Character Vol 1: {subRutaSinExtension}");
-            return null;
-        }
-
-        private Sprite ObtenerSpriteCompletoCC(string subRutaSinExtension)
-        {
-            if (cacheSpritesCC.TryGetValue(subRutaSinExtension, out Sprite spCache) && spCache != null)
+            if (cacheSprites.TryGetValue(nombre, out Sprite spCache) && spCache != null)
             {
                 return spCache;
             }
 
-            // Intentar cargar como Sprite directo desde Resources
-            Sprite spRes = Resources.Load<Sprite>("CustomCharacter/" + subRutaSinExtension);
+            // 1. Cargar desde Resources (PersonajesColonial/Nombre)
+            Sprite spRes = Resources.Load<Sprite>("PersonajesColonial/" + nombre);
             if (spRes != null)
             {
-                cacheSpritesCC[subRutaSinExtension] = spRes;
+                cacheSprites[nombre] = spRes;
                 return spRes;
             }
 
-            Texture2D tex = CargarTexturaCC(subRutaSinExtension);
-            if (tex == null) return null;
-
-            Sprite nuevoSp = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 100f);
-            cacheSpritesCC[subRutaSinExtension] = nuevoSp;
-            return nuevoSp;
-        }
-
-        private Sprite ObtenerSubSpriteCC(string subRutaSinExtension, Rect rectSubSprite)
-        {
-            string clave = $"{subRutaSinExtension}_{rectSubSprite.x}_{rectSubSprite.y}_{rectSubSprite.width}_{rectSubSprite.height}";
-            if (cacheSpritesCC.TryGetValue(clave, out Sprite spCache) && spCache != null)
+            Texture2D texRes = Resources.Load<Texture2D>("PersonajesColonial/" + nombre);
+            if (texRes != null)
             {
-                return spCache;
+                Sprite nuevoSp = Sprite.Create(texRes, new Rect(0, 0, texRes.width, texRes.height), new Vector2(0.5f, 0f), 380f);
+                cacheSprites[nombre] = nuevoSp;
+                return nuevoSp;
             }
 
-            Texture2D tex = CargarTexturaCC(subRutaSinExtension);
-            if (tex == null) return null;
+            // 2. Fallback directo desde archivo de disco (Assets/Sprites/PersonajesColonial/)
+            try
+            {
+                string ruta = System.IO.Path.Combine(Application.dataPath, "Sprites/PersonajesColonial", nombre + ".png");
+                if (System.IO.File.Exists(ruta))
+                {
+                    byte[] data = System.IO.File.ReadAllBytes(ruta);
+                    Texture2D tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+                    if (tex.LoadImage(data))
+                    {
+                        tex.filterMode = FilterMode.Bilinear;
+                        Sprite sp = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0f), 380f);
+                        cacheSprites[nombre] = sp;
+                        return sp;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[Nevería] No se pudo cargar sprite colonial {nombre}: {ex.Message}");
+            }
 
-            Sprite subSp = Sprite.Create(tex, rectSubSprite, new Vector2(0.5f, 0.5f), 100f);
-            cacheSpritesCC[clave] = subSp;
-            return subSp;
+            return null;
+        }
+
+        private Sprite SeleccionarSpriteParaCliente(string nombreCliente, int indexTurno)
+        {
+            if (nombreCliente.Contains("Remedios"))
+            {
+                return CargarSpriteColonial("DonaRemedios");
+            }
+            if (nombreCliente.Contains("Silvestre") || nombreCliente.Contains("Arriero"))
+            {
+                return CargarSpriteColonial("DonSilvestre");
+            }
+            if (nombreCliente.Contains("Alfarero") || nombreCliente.Contains("Aprendiz") || nombreCliente.Contains("Cantería"))
+            {
+                return CargarSpriteColonial("JovenAlfarero");
+            }
+            if (nombreCliente.Contains("Criolla") || nombreCliente.Contains("Poblana") || nombreCliente.Contains("Felipe"))
+            {
+                return CargarSpriteColonial("CriollaSanFelipe");
+            }
+
+            // Selección rotativa de personajes para nombres adicionales
+            string[] variantes = new string[] { "DonaRemedios", "DonSilvestre", "JovenAlfarero", "CriollaSanFelipe" };
+            string elegida = variantes[indexTurno % variantes.Length];
+            return CargarSpriteColonial(elegida);
         }
 
         private void AjustarFondoACamara()
@@ -450,20 +278,16 @@ namespace CaminosDeGuanajuato.Nieves
             int idxCliente = (clientesAtendidos + clientesPerdidos) % nombresComensales.Count;
             string nombre = nombresComensales[idxCliente];
 
-            float pacienciaBase = Mathf.Max(26f, 36f - (clientesAtendidos * 0.8f));
+            float pacienciaBase = Mathf.Max(11f, 18f - (clientesAtendidos * 1.0f));
             PedidoNieve nuevoPedido = new PedidoNieve(rec, sabor, nombre, pacienciaBase);
 
             GameObject go = new GameObject($"Cliente_{nombre}");
             go.transform.position = puntoSpawnCliente;
 
-            if (catalogoVariantesCC.Count > 0)
-            {
-                ConfiguracionPersonajeCC configElegida = catalogoVariantesCC[(clientesAtendidos + clientesPerdidos) % catalogoVariantesCC.Count];
-                EnsamblarPersonajeCustomVol1(go, configElegida, ordenBase: 10);
-            }
+            Sprite spriteElegido = SeleccionarSpriteParaCliente(nombre, idxCliente);
 
             clienteActual = go.AddComponent<ClienteTurista>();
-            clienteActual.Configurar(nuevoPedido, puntoMostradorCliente, puntoSalidaCliente, escalaPersonaje: 0.135f);
+            clienteActual.Configurar(nuevoPedido, puntoMostradorCliente, puntoSalidaCliente, spriteElegido);
             clienteActual.OnPacienciaAgotada += ManejarClientePerdido;
             ultimoErrorEntrega = null;
 
@@ -490,6 +314,8 @@ namespace CaminosDeGuanajuato.Nieves
                 int puntosGanados = clienteActual.Pedido.valorPuntos + Mathf.RoundToInt(clienteActual.Pedido.PorcentajePaciencia * 50f);
                 puntajeTotal += puntosGanados;
                 ultimoErrorEntrega = null;
+
+                OnNotificacionFlotante?.Invoke($"+{puntosGanados} pts ¡Exquisito! 💖", new Color(1f, 0.90f, 0.25f), clienteActual.transform.position + Vector3.up * 2.6f);
 
                 if (RecursosCivicosManager.Instance != null)
                 {
@@ -534,6 +360,7 @@ namespace CaminosDeGuanajuato.Nieves
                 string sabActual = PedidoNieve.ObtenerNombreSabor(MesaPreparacion.Instance.SaborActual);
 
                 ultimoErrorEntrega = $"¡No coincide! {clienteActual.NombreCliente} pidió {recDeseado} de {sabDeseado}, pero preparaste {recActual} de {sabActual}.";
+                OnNotificacionFlotante?.Invoke("¡No coincide! ❌", new Color(1f, 0.40f, 0.35f), clienteActual.transform.position + Vector3.up * 2.6f);
 
                 if (DonChonConsejero.Instance != null)
                 {
@@ -550,6 +377,7 @@ namespace CaminosDeGuanajuato.Nieves
             if (clienteActual != null)
             {
                 clientesPerdidos++;
+                OnNotificacionFlotante?.Invoke("¡Entrega fallida! 💔", new Color(1f, 0.35f, 0.35f), clienteActual.transform.position + Vector3.up * 2.6f);
                 if (AudioColonialManager.Instance != null)
                 {
                     AudioColonialManager.Instance.ReproducirErrorPedido();
@@ -585,6 +413,10 @@ namespace CaminosDeGuanajuato.Nieves
             if (estadoJuego != EstadoJuegoNeveria.Jugando) return;
 
             clientesPerdidos++;
+            if (cliente != null)
+            {
+                OnNotificacionFlotante?.Invoke("¡Paciencia agotada! 💔", new Color(1f, 0.40f, 0.40f), cliente.transform.position + Vector3.up * 2.6f);
+            }
             if (AudioColonialManager.Instance != null)
             {
                 AudioColonialManager.Instance.ReproducirErrorPedido();
